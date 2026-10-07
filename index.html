@@ -518,7 +518,7 @@
                                 owner_instagram: clienteLocal.nombre || "Cliente Web"
                             };
 
-                            console.log("Enviando orden a Supabase:", datosOrden);
+                            console.log("Intentando insertar en Supabase:", datosOrden);
 
                             const { data: resultadoInsert, error } = await supabaseClient
                                 .from('ordenes_vip')
@@ -526,10 +526,11 @@
                                 .select();
 
                             if (error) {
-                                console.error("Error exacto de Supabase:", error.message, error.details);
-                                alert("Error al registrar en base de datos: " + error.message);
+                                // Esto mostrará un aviso detallado en la pantalla con el problema exacto
+                                alert("ERROR SUPABASE: " + JSON.stringify(error, null, 2));
+                                console.error("Error detallado:", error);
                             } else {
-                                console.log("Orden guardada:", resultadoInsert);
+                                console.log("Orden guardada con éxito:", resultadoInsert);
                                 
                                 await guardarOrdenEnCentral({
                                     detalles: listaNombresProductos
