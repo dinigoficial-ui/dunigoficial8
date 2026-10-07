@@ -8,8 +8,8 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <!-- SDK de PayPal: Reemplaza 'test' por tu Client ID real de PayPal Developer -->
-    <script src="https://www.paypal.com/sdk/js?client-id=BAAJXjp6RUin5h38OTPrvUN47wf7NG9zcimQN4tMCfEvRK2EEL3-ArZlGFl5hk_j98AYJPVGHcMXjASOFQ=USD"></script>
+    <!-- SDK de PayPal Oficial -->
+    <script src="https://www.paypal.com/sdk/js?client-id=sb&currency=USD"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Plus+Jakarta+Sans:wght@200;300;400;500;700&display=swap');
@@ -105,7 +105,6 @@
 
     <!-- VISTA VITRINA DE INFOPRODUCTOS -->
     <main id="vista-vitrina" class="max-w-7xl w-full mx-auto px-4 py-8 flex-grow space-y-8 relative z-10">
-        <!-- HERO BANNER EXCLUSIVO -->
         <div class="glass-panel rounded-3xl overflow-hidden border border-amber-500/30 shadow-2xl relative">
             <div class="w-full h-72 md:h-96 relative overflow-hidden bg-black">
                 <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1600" alt="Banner Futuro" class="w-full h-full object-cover opacity-40 transform hover:scale-105 transition-transform duration-700">
@@ -123,7 +122,6 @@
             </div>
         </div>
 
-        <!-- BUSCADOR PROFESIONAL -->
         <div class="w-full max-w-2xl mx-auto px-2">
             <div class="relative flex items-center bg-stone-950 border border-amber-500/30 rounded-2xl p-2.5 shadow-xl focus-within:border-amber-500 transition-colors">
                 <div class="pl-3 pr-2 text-amber-400">
@@ -142,7 +140,6 @@
             </div>
         </div>
 
-        <!-- GRID DE PRODUCTOS -->
         <div id="grid-productos-vitrina" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <div class="col-span-3 text-center text-stone-500 py-12 font-mono text-xs">Cargando infoproductos desde la base de datos...</div>
         </div>
@@ -479,69 +476,76 @@
             document.getElementById('carrito-monto-total').innerText = `$${subtotal.toFixed(2)}`;
         }
 
-        // INTEGRACIÓN PROFESIONAL CON PAYPAL SDK Y SUPABASE
+        // RENDERIZADO DE PAYPAL ROBUSTO
         function renderizarBotonPayPal() {
             const container = document.getElementById('paypal-button-container');
             if (!container) return;
             container.innerHTML = ""; 
 
             let subtotalProductos = carrito.reduce((a, b) => a + b.precio, 0);
-            if (subtotalProductos <= 0) return;
+            if (subtotalProductos <= 0) {
+                container.innerHTML = `<p class="text-[11px] text-stone-500 text-center py-2 font-mono">Agrega un infoproducto para habilitar el pago.</p>`;
+                return;
+            }
 
-            paypal.Buttons({
-                createOrder: function(data, actions) {
-                    return actions.order.create({
-                        purchase_units: [{
-                            amount: {
-                                value: subtotalProductos.toFixed(2)
+            if (typeof paypal === 'undefined' || !paypal.Buttons) {
+                container.innerHTML = `<div class="p-3 bg-red-950/40 border border-red-500/30 rounded-xl text-center text-xs text-red-300 font-mono">El SDK de PayPal no cargó. Verifica tu conexión o bloqueador de anuncios.</div>`;
+                return;
+            }
+
+            try {
+                paypal.Buttons({
+                    createOrder: function(data, actions) {
+                        return actions.order.create({
+                            purchase_units: [{
+                                amount: { value: subtotalProductos.toFixed(2) }
+                            }]
+                        });
+                    },
+                    onApprove: function(data, actions) {
+                        return actions.order.capture().then(async function(details) {
+                            const clienteLocal = JSON.parse(localStorage.getItem('dunig_cliente_registrado') || '{}');
+                            const codigoReferidoCliente = localStorage.getItem('dunig_ref_code') || 'NINGUNO';
+                            const refPayPal = details.id;
+
+                            const datosOrden = {
+                                productos: carrito.map(i => i.titulo).join(', '),
+                                total: subtotalProductos,
+                                monto_total: subtotalProductos,
+                                referencia: refPayPal,
+                                referencia_bancaria: refPayPal,
+                                estado: "Pagado (PayPal)",
+                                codigo_referido: codigoReferidoCliente,
+                                costo_delivery: 0,
+                                nombre_cliente: clienteLocal.nombre || 'Cliente VIP',
+                                telefono: clienteLocal.whatsapp || 'N/A'
+                            };
+
+                            const { error } = await supabaseClient.from('ordenes_vip').insert([datosOrden]);
+
+                            if (error) {
+                                alert("Pago exitoso en PayPal, pero error al registrar en base de datos: " + error.message);
+                            } else {
+                                await guardarOrdenEnCentral({
+                                    detalles: carrito.map(i => i.titulo).join(', ')
+                                });
+
+                                alert(`¡Pago completado con éxito por ${details.payer.name.given_name}! Orden registrada.`);
+                                carrito = [];
+                                document.getElementById('contador-carrito-badge').innerText = "0";
+                                cambiarPantalla('vitrina');
                             }
-                        }]
-                    });
-                },
-                onApprove: function(data, actions) {
-                    return actions.order.capture().then(async function(details) {
-                        const clienteLocal = JSON.parse(localStorage.getItem('dunig_cliente_registrado') || '{}');
-                        const codigoReferidoCliente = localStorage.getItem('dunig_ref_code') || 'NINGUNO';
-                        const refPayPal = details.id;
-
-                        const datosOrden = {
-                            productos: carrito.map(i => i.titulo).join(', '),
-                            total: subtotalProductos,
-                            monto_total: subtotalProductos,
-                            referencia: refPayPal,
-                            referencia_bancaria: refPayPal,
-                            estado: "Pagado (PayPal)",
-                            codigo_referido: codigoReferidoCliente,
-                            costo_delivery: 0,
-                            nombre_cliente: clienteLocal.nombre || 'Cliente VIP',
-                            telefono: clienteLocal.whatsapp || 'N/A'
-                        };
-
-                        // Actualización instantánea en Supabase (ordenes_vip)
-                        const { error } = await supabaseClient.from('ordenes_vip').insert([datosOrden]);
-
-                        if (error) {
-                            console.error("Error al guardar en Supabase:", error);
-                            alert("Pago exitoso en PayPal, pero ocurrió un error al registrar en la base de datos: " + error.message);
-                        } else {
-                            // Sincronización con la central
-                            await guardarOrdenEnCentral({
-                                detalles: carrito.map(i => i.titulo).join(', ')
-                            });
-
-                            alert(`¡Pago completado con éxito por ${details.payer.name.given_name}! Tu orden ha sido registrada.`);
-                            carrito = [];
-                            document.getElementById('contador-carrito-badge').innerText = "0";
-                            localStorage.removeItem('dunig_ref_code');
-                            cambiarPantalla('vitrina');
-                        }
-                    });
-                },
-                onError: function(err) {
-                    console.error("Error en el proceso de pago PayPal:", err);
-                    alert("Hubo un error al procesar el pago con PayPal.");
-                }
-            }).render('#paypal-button-container');
+                        });
+                    },
+                    onError: function(err) {
+                        console.error("Error PayPal:", err);
+                        alert("Ocurrió un error con la pasarela de PayPal.");
+                    }
+                }).render('#paypal-button-container');
+            } catch(e) {
+                console.error("Error al renderizar botones:", e);
+                container.innerHTML = `<div class="p-3 text-red-400 text-xs text-center font-mono">Error al inicializar pasarela de pagos.</div>`;
+            }
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
