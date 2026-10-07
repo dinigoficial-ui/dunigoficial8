@@ -503,6 +503,8 @@
                         });
                     },
                     onApprove: function(data, actions) {
+                        alert("¡Pago aprobado por PayPal! Procesando registro...");
+                        
                         return actions.order.capture().then(async function(details) {
                             const clienteLocal = JSON.parse(localStorage.getItem('dunig_cliente_registrado') || '{}');
                             
@@ -518,29 +520,27 @@
                                 owner_instagram: clienteLocal.nombre || "Cliente Web"
                             };
 
-                            console.log("Intentando insertar en Supabase:", datosOrden);
-
+                            // Inserción directa con manejo de errores por alerta visual
                             const { data: resultadoInsert, error } = await supabaseClient
                                 .from('ordenes_vip')
                                 .insert([datosOrden])
                                 .select();
 
                             if (error) {
-                                // Esto mostrará un aviso detallado en la pantalla con el problema exacto
-                                alert("ERROR SUPABASE: " + JSON.stringify(error, null, 2));
-                                console.error("Error detallado:", error);
+                                alert("ERROR SUPABASE AL GUARDAR: " + error.message);
                             } else {
-                                console.log("Orden guardada con éxito:", resultadoInsert);
+                                alert("¡Orden guardada en Supabase con éxito!");
                                 
                                 await guardarOrdenEnCentral({
                                     detalles: listaNombresProductos
                                 });
 
-                                alert(`¡Pago completado con éxito! Tu infoproducto será enviado a: ${clienteLocal.correo || 'tu correo'}`);
                                 carrito = [];
                                 document.getElementById('contador-carrito-badge').innerText = "0";
                                 cambiarPantalla('vitrina');
                             }
+                        }).catch(err => {
+                            alert("Error en la captura de PayPal: " + err.message);
                         });
                     }
                 }).render('#paypal-button-container');
