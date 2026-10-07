@@ -500,50 +500,40 @@
                             }]
                         });
                     },
-                    onApprove: function(data, actions) {
-                        return actions.order.capture().then(async function(details) {
-                            const clienteLocal = JSON.parse(localStorage.getItem('dunig_cliente_registrado') || '{}');
-                            const refPayPal = details.id;
+                    // Actualización del bloque onApprove en el script de PayPal
+onApprove: function(data, actions) {
+    return actions.order.capture().then(async function(details) {
+        const clienteLocal = JSON.parse(localStorage.getItem('dunig_cliente_registrado') || '{}');
+        const refPayPal = details.id;
 
-                            const datosOrden = {
-                                productos: carrito.map(i => i.titulo).join(', '),
-                                total: subtotalProductos,
-                                monto_total: subtotalProductos,
-                                referencia: refPayPal,
-                                referencia_bancaria: refPayPal,
-                                estado: "Pagado (PayPal)",
-                                nombre_cliente: clienteLocal.nombre || 'Cliente VIP',
-                                correo_cliente: clienteLocal.correo || details.payer.email_address || 'N/A',
-                                telefono: clienteLocal.whatsapp || 'N/A'
-                            };
+        // Estructura de datos adaptada estrictamente a tu tabla public.ordenes_vip
+        const datosOrden = {
+            cliente_nombre: clienteLocal.nombre || 'Cliente VIP',
+            cliente_telefono: clienteLocal.whatsapp || 'N/A',
+            detalles_pedido: carrito, // Se guarda directamente como JSONB en Supabase
+            total: subtotalProductos,
+            monto_total: subtotalProductos,
+            estado: "Pagado (PayPal)",
+            metodo_pago: "PayPal",
+            referencia: refPayPal
+        };
 
-                            const { error } = await supabaseClient.from('ordenes_vip').insert([datosOrden]);
+        const { error } = await supabaseClient.from('ordenes_vip').insert([datosOrden]);
 
-                            if (error) {
-                                alert("Pago exitoso en PayPal, pero error al registrar en base de datos: " + error.message);
-                            } else {
-                                await guardarOrdenEnCentral({
-                                    detalles: carrito.map(i => i.titulo).join(', ')
-                                });
+        if (error) {
+            alert("Pago exitoso en PayPal, pero error al registrar en base de datos: " + error.message);
+        } else {
+            await guardarOrdenEnCentral({
+                detalles: carrito.map(i => i.titulo).join(', ')
+            });
 
-                                alert(`¡Pago completado con éxito! Tu infoproducto será enviado en breve al correo: ${datosOrden.correo_cliente}`);
-                                carrito = [];
-                                document.getElementById('contador-carrito-badge').innerText = "0";
-                                cambiarPantalla('vitrina');
-                            }
-                        });
-                    },
-                    onError: function(err) {
-                        console.error("Error PayPal:", err);
-                        alert("Ocurrió un error con la pasarela de PayPal.");
-                    }
-                }).render('#paypal-button-container');
-            } catch(e) {
-                console.error("Error al renderizar botones:", e);
-                container.innerHTML = `<div class="p-3 text-red-400 text-xs text-center font-mono">Error al inicializar pasarela de pagos.</div>`;
-            }
+            alert(`¡Pago completado con éxito! Tu infoproducto será enviado en breve al correo: ${clienteLocal.correo || 'Registrado'}`);
+            carrito = [];
+            document.getElementById('contador-carrito-badge').innerText = "0";
+            cambiarPantalla('vitrina');
         }
-
+    });
+}
         window.addEventListener('DOMContentLoaded', async () => {
             verificarClienteRegistrado();
             await descargarCatalogoDeSupabase();
