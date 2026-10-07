@@ -175,7 +175,7 @@
                 <div class="grid grid-cols-2 gap-4 border-t border-stone-800 pt-4">
                     <div>
                         <span class="text-[9px] uppercase text-stone-500 font-bold block font-futurista">Formato de Entrega:</span>
-                        <span class="text-xs text-white font-bold font-mono">Descarga Digital Inmediata</span>
+                        <span class="text-xs text-white font-bold font-mono">Entrega Automática a Correo</span>
                     </div>
                     <div>
                         <span class="text-[9px] uppercase text-stone-500 font-bold block font-futurista">Licencia VIP:</span>
@@ -305,10 +305,8 @@
                     body: JSON.stringify({
                         comercio: "DUNIGINFO Ebook Studio",
                         comercio_nombre: "DUNIGINFO Digital",
-                        comercio_direccion: "Mérida, Venezuela (Online)",
+                        comercio_direccion: "Internet / Entrega por Correo",
                         productos: nuevaOrden.detalles || "Infoproducto digital",
-                        costo_delivery: 0,
-                        coordenadas_gps: "0,0",
                         estado: "Pagado (PayPal)"
                     })
                 });
@@ -505,7 +503,6 @@
                     onApprove: function(data, actions) {
                         return actions.order.capture().then(async function(details) {
                             const clienteLocal = JSON.parse(localStorage.getItem('dunig_cliente_registrado') || '{}');
-                            const codigoReferidoCliente = localStorage.getItem('dunig_ref_code') || 'NINGUNO';
                             const refPayPal = details.id;
 
                             const datosOrden = {
@@ -515,9 +512,8 @@
                                 referencia: refPayPal,
                                 referencia_bancaria: refPayPal,
                                 estado: "Pagado (PayPal)",
-                                codigo_referido: codigoReferidoCliente,
-                                costo_delivery: 0,
                                 nombre_cliente: clienteLocal.nombre || 'Cliente VIP',
+                                correo_cliente: clienteLocal.correo || details.payer.email_address || 'N/A',
                                 telefono: clienteLocal.whatsapp || 'N/A'
                             };
 
@@ -530,7 +526,7 @@
                                     detalles: carrito.map(i => i.titulo).join(', ')
                                 });
 
-                                alert(`¡Pago completado con éxito por ${details.payer.name.given_name}! Orden registrada.`);
+                                alert(`¡Pago completado con éxito! Tu infoproducto será enviado en breve al correo: ${datosOrden.correo_cliente}`);
                                 carrito = [];
                                 document.getElementById('contador-carrito-badge').innerText = "0";
                                 cambiarPantalla('vitrina');
