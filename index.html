@@ -503,38 +503,49 @@
                             }]
                         });
                     },
-                    onApprove: function(data, actions) {
-                        return actions.order.capture().then(async function(details) {
-                            const clienteLocal = JSON.parse(localStorage.getItem('dunig_cliente_registrado') || '{}');
-                            const refPayPal = details.id;
+                    // Dentro de onApprove en los botones de PayPal:
+onApprove: function(data, actions) {
+    return actions.order.capture().then(async function(details) {
+        const clienteLocal = JSON.parse(localStorage.getItem('dunig_cliente_registrado') || '{}');
+        
+        // Creamos una cadena con los nombres de los productos comprados
+        const listaNombresProductos = carrito.map(i => i.titulo).join(', ');
+        const montoFinal = carrito.reduce((a, b) => a + b.precio, 0);
 
-                            const datosOrden = {
-                                cliente_nombre: clienteLocal.nombre || 'Cliente VIP',
-                                cliente_telefono: clienteLocal.whatsapp || 'N/A',
-                                detalles_pedido: carrito,
-                                total: subtotalProductos,
-                                monto_total: subtotalProductos,
-                                estado: "Pagado (PayPal)",
-                                metodo_pago: "PayPal",
-                                referencia: refPayPal
-                            };
+        // Objeto exacto adaptado a las columnas de tu tabla ordenes_vip
+        const datosOrden = {
+            productos: listaNombresProductos || "Infoproducto digital VIP",
+            total: montoFinal,
+            monto_total: montoFinal,
+            referencia: details.id || "PAYPAL-" + Date.now(),
+            estado: "Pagado",
+            owner_instagram: clienteLocal.nombre || "Cliente Web"
+        };
 
-                            const { error } = await supabaseClient.from('ordenes_vip').insert([datosOrden]);
+        console.log("Enviando orden a Supabase:", datosOrden);
 
-                            if (error) {
-                                alert("Pago exitoso en PayPal, pero error al registrar en base de datos: " + error.message);
-                            } else {
-                                await guardarOrdenEnCentral({
-                                    detalles: carrito.map(i => i.titulo).join(', ')
-                                });
+        const { data: resultadoInsert, error } = await supabaseClient
+            .from('ordenes_vip')
+            .insert([datosOrden])
+            .select();
 
-                                alert(`¡Pago completado con éxito! Tu infoproducto será enviado en breve al correo: ${clienteLocal.correo || 'Registrado'}`);
-                                carrito = [];
-                                document.getElementById('contador-carrito-badge').innerText = "0";
-                                cambiarPantalla('vitrina');
-                            }
-                        });
-                    }
+        if (error) {
+            console.error("Error detallado de Supabase al insertar:", error);
+            alert("El pago se realizó en PayPal, pero hubo un error al registrar en la base de datos: " + error.message);
+        } else {
+            console.log("Orden guardada con éxito:", resultadoInsert);
+            
+            await guardarOrdenEnCentral({
+                detalles: listaNombresProductos
+            });
+
+            alert(`¡Pago completado con éxito! Tu infoproducto será enviado a: ${clienteLocal.correo || 'tu correo'}`);
+            carrito = [];
+            document.getElementById('contador-carrito-badge').innerText = "0";
+            cambiarPantalla('vitrina');
+        }
+    });
+}
                 }).render('#paypal-button-container');
             } catch (e) {
                 console.error("Error al renderizar botones de PayPal:", e);
