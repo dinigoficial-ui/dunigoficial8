@@ -276,7 +276,10 @@
 
             const datosCliente = { nombre, whatsapp, correo };
             localStorage.setItem('dunig_cliente_registrado', JSON.stringify(datosCliente));
-            document.getElementById('modal-registro-cliente').style.display = 'none';
+            
+            // CORREGIDO: Oculta el modal de registro y permite el acceso directo a la vitrina
+            const modal = document.getElementById('modal-registro-cliente');
+            if (modal) modal.style.display = 'none';
         }
 
         function verificarClienteRegistrado() {
@@ -500,40 +503,44 @@
                             }]
                         });
                     },
-                    // Actualización del bloque onApprove en el script de PayPal
-onApprove: function(data, actions) {
-    return actions.order.capture().then(async function(details) {
-        const clienteLocal = JSON.parse(localStorage.getItem('dunig_cliente_registrado') || '{}');
-        const refPayPal = details.id;
+                    onApprove: function(data, actions) {
+                        return actions.order.capture().then(async function(details) {
+                            const clienteLocal = JSON.parse(localStorage.getItem('dunig_cliente_registrado') || '{}');
+                            const refPayPal = details.id;
 
-        // Estructura de datos adaptada estrictamente a tu tabla public.ordenes_vip
-        const datosOrden = {
-            cliente_nombre: clienteLocal.nombre || 'Cliente VIP',
-            cliente_telefono: clienteLocal.whatsapp || 'N/A',
-            detalles_pedido: carrito, // Se guarda directamente como JSONB en Supabase
-            total: subtotalProductos,
-            monto_total: subtotalProductos,
-            estado: "Pagado (PayPal)",
-            metodo_pago: "PayPal",
-            referencia: refPayPal
-        };
+                            const datosOrden = {
+                                cliente_nombre: clienteLocal.nombre || 'Cliente VIP',
+                                cliente_telefono: clienteLocal.whatsapp || 'N/A',
+                                detalles_pedido: carrito,
+                                total: subtotalProductos,
+                                monto_total: subtotalProductos,
+                                estado: "Pagado (PayPal)",
+                                metodo_pago: "PayPal",
+                                referencia: refPayPal
+                            };
 
-        const { error } = await supabaseClient.from('ordenes_vip').insert([datosOrden]);
+                            const { error } = await supabaseClient.from('ordenes_vip').insert([datosOrden]);
 
-        if (error) {
-            alert("Pago exitoso en PayPal, pero error al registrar en base de datos: " + error.message);
-        } else {
-            await guardarOrdenEnCentral({
-                detalles: carrito.map(i => i.titulo).join(', ')
-            });
+                            if (error) {
+                                alert("Pago exitoso en PayPal, pero error al registrar en base de datos: " + error.message);
+                            } else {
+                                await guardarOrdenEnCentral({
+                                    detalles: carrito.map(i => i.titulo).join(', ')
+                                });
 
-            alert(`¡Pago completado con éxito! Tu infoproducto será enviado en breve al correo: ${clienteLocal.correo || 'Registrado'}`);
-            carrito = [];
-            document.getElementById('contador-carrito-badge').innerText = "0";
-            cambiarPantalla('vitrina');
+                                alert(`¡Pago completado con éxito! Tu infoproducto será enviado en breve al correo: ${clienteLocal.correo || 'Registrado'}`);
+                                carrito = [];
+                                document.getElementById('contador-carrito-badge').innerText = "0";
+                                cambiarPantalla('vitrina');
+                            }
+                        });
+                    }
+                }).render('#paypal-button-container');
+            } catch (e) {
+                console.error("Error al renderizar botones de PayPal:", e);
+            }
         }
-    });
-}
+
         window.addEventListener('DOMContentLoaded', async () => {
             verificarClienteRegistrado();
             await descargarCatalogoDeSupabase();
