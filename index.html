@@ -277,7 +277,6 @@
             const datosCliente = { nombre, whatsapp, correo };
             localStorage.setItem('dunig_cliente_registrado', JSON.stringify(datosCliente));
             
-            // CORREGIDO: Oculta el modal de registro y permite el acceso directo a la vitrina
             const modal = document.getElementById('modal-registro-cliente');
             if (modal) modal.style.display = 'none';
         }
@@ -503,49 +502,46 @@
                             }]
                         });
                     },
-                    // Dentro de onApprove en los botones de PayPal:
-onApprove: function(data, actions) {
-    return actions.order.capture().then(async function(details) {
-        const clienteLocal = JSON.parse(localStorage.getItem('dunig_cliente_registrado') || '{}');
-        
-        // Creamos una cadena con los nombres de los productos comprados
-        const listaNombresProductos = carrito.map(i => i.titulo).join(', ');
-        const montoFinal = carrito.reduce((a, b) => a + b.precio, 0);
+                    onApprove: function(data, actions) {
+                        return actions.order.capture().then(async function(details) {
+                            const clienteLocal = JSON.parse(localStorage.getItem('dunig_cliente_registrado') || '{}');
+                            
+                            const listaNombresProductos = carrito.map(i => i.titulo).join(', ');
+                            const montoFinal = carrito.reduce((a, b) => a + b.precio, 0);
 
-        // Objeto exacto adaptado a las columnas de tu tabla ordenes_vip
-        const datosOrden = {
-            productos: listaNombresProductos || "Infoproducto digital VIP",
-            total: montoFinal,
-            monto_total: montoFinal,
-            referencia: details.id || "PAYPAL-" + Date.now(),
-            estado: "Pagado",
-            owner_instagram: clienteLocal.nombre || "Cliente Web"
-        };
+                            const datosOrden = {
+                                productos: listaNombresProductos || "Infoproducto digital VIP",
+                                total: montoFinal,
+                                monto_total: montoFinal,
+                                referencia: details.id || "PAYPAL-" + Date.now(),
+                                estado: "Pagado",
+                                owner_instagram: clienteLocal.nombre || "Cliente Web"
+                            };
 
-        console.log("Enviando orden a Supabase:", datosOrden);
+                            console.log("Enviando orden a Supabase:", datosOrden);
 
-        const { data: resultadoInsert, error } = await supabaseClient
-            .from('ordenes_vip')
-            .insert([datosOrden])
-            .select();
+                            const { data: resultadoInsert, error } = await supabaseClient
+                                .from('ordenes_vip')
+                                .insert([datosOrden])
+                                .select();
 
-        if (error) {
-            console.error("Error detallado de Supabase al insertar:", error);
-            alert("El pago se realizó en PayPal, pero hubo un error al registrar en la base de datos: " + error.message);
-        } else {
-            console.log("Orden guardada con éxito:", resultadoInsert);
-            
-            await guardarOrdenEnCentral({
-                detalles: listaNombresProductos
-            });
+                            if (error) {
+                                console.error("Error exacto de Supabase:", error.message, error.details);
+                                alert("Error al registrar en base de datos: " + error.message);
+                            } else {
+                                console.log("Orden guardada:", resultadoInsert);
+                                
+                                await guardarOrdenEnCentral({
+                                    detalles: listaNombresProductos
+                                });
 
-            alert(`¡Pago completado con éxito! Tu infoproducto será enviado a: ${clienteLocal.correo || 'tu correo'}`);
-            carrito = [];
-            document.getElementById('contador-carrito-badge').innerText = "0";
-            cambiarPantalla('vitrina');
-        }
-    });
-}
+                                alert(`¡Pago completado con éxito! Tu infoproducto será enviado a: ${clienteLocal.correo || 'tu correo'}`);
+                                carrito = [];
+                                document.getElementById('contador-carrito-badge').innerText = "0";
+                                cambiarPantalla('vitrina');
+                            }
+                        });
+                    }
                 }).render('#paypal-button-container');
             } catch (e) {
                 console.error("Error al renderizar botones de PayPal:", e);
