@@ -511,23 +511,24 @@
                             const listaNombresProductos = carrito.map(i => i.titulo).join(', ');
                             const montoFinal = carrito.reduce((a, b) => a + b.precio, 0);
 
+                            // Objeto simplificado sin campos que puedan dar error
                             const datosOrden = {
                                 productos: listaNombresProductos || "Infoproducto digital VIP",
                                 total: montoFinal,
                                 monto_total: montoFinal,
-                                referencia: details.id || "PAYPAL-" + Date.now(),
-                                estado: "Pagado",
-                                owner_instagram: clienteLocal.nombre || "Cliente Web"
+                                estado: "Pagado"
                             };
 
-                            // Inserción directa con manejo de errores por alerta visual
+                            console.log("Enviando a Supabase:", datosOrden);
+
                             const { data: resultadoInsert, error } = await supabaseClient
                                 .from('ordenes_vip')
                                 .insert([datosOrden])
                                 .select();
 
                             if (error) {
-                                alert("ERROR SUPABASE AL GUARDAR: " + error.message);
+                                alert("Error al guardar en Supabase: " + error.message);
+                                console.error("Detalle del error:", error);
                             } else {
                                 alert("¡Orden guardada en Supabase con éxito!");
                                 
