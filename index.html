@@ -9,7 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <!-- SDK de PayPal Oficial -->
-    <script src="https://www.paypal.com/sdk/js?client-id=BAAJXjp6RUin5h38OTPrvUN47wf7NG9zcimQN4tMCfEvRK2EEL3-ArZlGFl5hk_j98AYJPVGHcMXjASOFQ"></script>
+    <script src="https://www.paypal.com/sdk/js?client-id=BAAJXjp6RUin5h38OTPrvUN47wf7NG9zcimQN4tMCfEvRK2EEL3-ArZlGFl5hk_j98AYJPVGHcMXjASOFQ&currency=USD&intent=capture"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Plus+Jakarta+Sans:wght@200;300;400;500;700&display=swap');
@@ -83,7 +83,7 @@
                        DUNIG<span class="text-amber-400">INFO</span>
                     </h1>
                     <p class="text-[8px] text-amber-500/70 uppercase tracking-[0.3em] font-bold font-futurista">
-                        DIGITAL ECOSYSTEM $$
+                        DIGITAL ECOSYSTEM STUDIO
                     </p>
                 </div>
             </div>
@@ -116,7 +116,7 @@
                         INFOPRODUCTOS DE <span class="text-amber-400 text-gold">ALTO RENDIMIENTO</span>
                     </h2>
                     <p class="text-xs md:text-sm text-stone-300 max-w-2xl leading-relaxed">
-                        Adquiere guías expertas, recetarios digitales exclusivos, herramientas automatizadas y sistemas listos para escalar tus proyectos al siguiente nivel del EXITO.....
+                        Adquiere guías expertas, recetarios digitales exclusivos, herramientas automatizadas y sistemas listos para escalar tus proyectos al siguiente nivel del EXITO.
                     </p>
                 </div>
             </div>
@@ -245,8 +245,8 @@
     </footer>
 
     <script>
-        const SUPABASE_URL = "https://mivyqxzdslmxyhvzdvol.supabase.co";  
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pdnlxeHpkc2xteHlodnpkdm9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1MzY1NDAsImV4cCI6MjEwMTExMjU0MH0.tyW84m8agyt3b-XGSMsRie4QZZ382gF8hO3ERGV9nf4"; 
+        const SUPABASE_URL = "https://mkewwlmeikixpvfayisj.supabase.co";  
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1rZXd3bG1laWtpeHB2ZmF5aXNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk3Mzg5NTAsImV4cCI6MjEwNTMxNDk1MH0.xUm7b8j4EGjHtsrBP9DgBURKRhrsPwOxhwKLCAMxZ1o"; 
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let carrito = [];
@@ -277,6 +277,7 @@
             const datosCliente = { nombre, whatsapp, correo };
             localStorage.setItem('dunig_cliente_registrado', JSON.stringify(datosCliente));
             
+            // CORREGIDO: Oculta el modal de registro y permite el acceso directo a la vitrina
             const modal = document.getElementById('modal-registro-cliente');
             if (modal) modal.style.display = 'none';
         }
@@ -476,6 +477,44 @@
             document.getElementById('carrito-monto-total').innerText = `$${subtotal.toFixed(2)}`;
         }
 
+        // ============================================================
+        // REGISTRO DE ÓRDENES EN SUPABASE (tabla ordenes_vip)
+        // ============================================================
+        const COLA_PENDIENTES_KEY = 'dunig_ordenes_pendientes';
+
+        function leerColaPendientes() {
+            try { return JSON.parse(localStorage.getItem(COLA_PENDIENTES_KEY) || '[]'); }
+            catch (e) { return []; }
+        }
+
+        function guardarColaPendientes(cola) {
+            try { localStorage.setItem(COLA_PENDIENTES_KEY, JSON.stringify(cola)); }
+            catch (e) { console.error("No se pudo guardar la cola local:", e); }
+        }
+
+        // Inserta una orden. IMPORTANTE: sin .select() porque el rol anon solo tiene
+        // permiso INSERT (con .select() Supabase exigiría también política SELECT).
+        async function insertarOrdenVip(orden) {
+            const { error } = await supabaseClient.from('ordenes_vip').insert([orden]);
+            if (!error) return { ok: true };
+            // 23505 = referencia duplicada: la orden ya estaba guardada, se considera éxito
+            if (error.code === '23505') return { ok: true, duplicada: true };
+            console.error("Error de Supabase al insertar orden:", error);
+            return { ok: false, error };
+        }
+
+        // Reintenta órdenes pagadas que no pudieron guardarse (sin internet, caída, etc.)
+        async function reintentarOrdenesPendientes() {
+            const cola = leerColaPendientes();
+            if (!cola.length) return;
+            const restantes = [];
+            for (const orden of cola) {
+                const r = await insertarOrdenVip(orden);
+                if (!r.ok) restantes.push(orden);
+            }
+            guardarColaPendientes(restantes);
+        }
+
         // RENDERIZADO DE PAYPAL ROBUSTO
         function renderizarBotonPayPal() {
             const container = document.getElementById('paypal-button-container');
@@ -498,51 +537,79 @@
                     createOrder: function(data, actions) {
                         return actions.order.create({
                             purchase_units: [{
-                                amount: { value: subtotalProductos.toFixed(2) }
+                                description: "DUNIGINFO - Infoproductos VIP",
+                                amount: {
+                                    currency_code: "USD",
+                                    value: subtotalProductos.toFixed(2)
+                                }
                             }]
                         });
                     },
-                    onApprove: function(data, actions) {
-                        alert("¡Pago aprobado por PayPal! Procesando registro...");
-                        
-                        return actions.order.capture().then(async function(details) {
-                            const clienteLocal = JSON.parse(localStorage.getItem('dunig_cliente_registrado') || '{}');
-                            
-                            const listaNombresProductos = carrito.map(i => i.titulo).join(', ');
-                            const montoFinal = carrito.reduce((a, b) => a + b.precio, 0);
 
-                            // Objeto simplificado sin campos que puedan dar error
-                            const datosOrden = {
-                                productos: listaNombresProductos || "Infoproducto digital VIP",
-                                total: montoFinal,
-                                monto_total: montoFinal,
-                                estado: "Pagado"
-                            };
+                    onApprove: async function(data, actions) {
+                        let details;
+                        try {
+                            details = await actions.order.capture();
+                        } catch (e) {
+                            console.error("Error al capturar el pago en PayPal:", e);
+                            alert("No se pudo completar el pago en PayPal. No se realizó ningún cobro. Inténtalo de nuevo.");
+                            return;
+                        }
 
-                            console.log("Enviando a Supabase:", datosOrden);
+                        // Foto del carrito y del cliente en el momento del pago
+                        const clienteLocal = JSON.parse(localStorage.getItem('dunig_cliente_registrado') || '{}');
+                        const listaNombresProductos = carrito.map(i => i.titulo).join(', ') || "Infoproducto digital VIP";
+                        const montoCarrito = carrito.reduce((a, b) => a + b.precio, 0);
 
-                            const { data: resultadoInsert, error } = await supabaseClient
-                                .from('ordenes_vip')
-                                .insert([datosOrden])
-                                .select();
+                        const captura = details.purchase_units?.[0]?.payments?.captures?.[0];
+                        const montoPagado = parseFloat(captura?.amount?.value ?? montoCarrito);
+                        const pagoCompletado = !captura || captura.status === 'COMPLETED';
 
-                            if (error) {
-                                alert("Error al guardar en Supabase: " + error.message);
-                                console.error("Detalle del error:", error);
-                            } else {
-                                alert("¡Orden guardada en Supabase con éxito!");
-                                
-                                await guardarOrdenEnCentral({
-                                    detalles: listaNombresProductos
-                                });
+                        // Objeto que coincide con las columnas y las políticas RLS de ordenes_vip
+                        const datosOrden = {
+                            productos: listaNombresProductos.substring(0, 2000),
+                            total: montoPagado,
+                            monto_total: montoPagado,
+                            referencia: details.id,
+                            estado: pagoCompletado ? "Pagado" : "Pendiente",
+                            owner_instagram: clienteLocal.nombre || "Cliente Web",
+                            cliente_nombre: clienteLocal.nombre || null,
+                            cliente_whatsapp: clienteLocal.whatsapp || null,
+                            cliente_correo: clienteLocal.correo || null,
+                            paypal_order_id: details.id,
+                            paypal_capture_id: captura?.id || null,
+                            payer_email: details.payer?.email_address || null,
+                            moneda: captura?.amount?.currency_code || "USD"
+                        };
 
-                                carrito = [];
-                                document.getElementById('contador-carrito-badge').innerText = "0";
-                                cambiarPantalla('vitrina');
-                            }
-                        }).catch(err => {
-                            alert("Error en la captura de PayPal: " + err.message);
-                        });
+                        // El pago ya está hecho: se vacía la bolsa antes de tocar la base de datos
+                        carrito = [];
+                        document.getElementById('contador-carrito-badge').innerText = "0";
+
+                        const resultado = await insertarOrdenVip(datosOrden);
+
+                        if (resultado.ok) {
+                            console.log("Orden guardada en ordenes_vip:", datosOrden.referencia);
+                            await guardarOrdenEnCentral({ detalles: listaNombresProductos });
+                            alert(`¡Pago completado con éxito! Tu infoproducto será enviado a: ${clienteLocal.correo || 'tu correo'}\nReferencia: ${datosOrden.referencia}`);
+                        } else {
+                            // Se guarda localmente y se reintenta en la próxima visita
+                            const cola = leerColaPendientes();
+                            cola.push(datosOrden);
+                            guardarColaPendientes(cola);
+                            alert(`Tu pago en PayPal fue exitoso (Referencia: ${datosOrden.referencia}), pero no pudimos registrar la orden todavía. Guarda esta referencia: lo intentaremos de nuevo automáticamente.\n\nDetalle: ${resultado.error?.message || 'error desconocido'}`);
+                        }
+
+                        cambiarPantalla('vitrina');
+                    },
+
+                    onCancel: function() {
+                        console.log("El cliente canceló el pago en PayPal.");
+                    },
+
+                    onError: function(err) {
+                        console.error("Error de PayPal:", err);
+                        alert("Ocurrió un error con PayPal. Si se te cobró, contáctanos con tu comprobante de pago.");
                     }
                 }).render('#paypal-button-container');
             } catch (e) {
@@ -554,6 +621,7 @@
             verificarClienteRegistrado();
             await descargarCatalogoDeSupabase();
             lucide.createIcons();
+            reintentarOrdenesPendientes();
         });
     </script>
 </body> 
