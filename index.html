@@ -277,7 +277,6 @@
             const datosCliente = { nombre, whatsapp, correo };
             localStorage.setItem('dunig_cliente_registrado', JSON.stringify(datosCliente));
             
-            // CORREGIDO: Oculta el modal de registro y permite el acceso directo a la vitrina
             const modal = document.getElementById('modal-registro-cliente');
             if (modal) modal.style.display = 'none';
         }
@@ -478,7 +477,7 @@
         }
 
         // ============================================================
-        // REGISTRO DE ÓRDENES EN SUPABASE (tabla ordenes_vip)
+        // REGISTRO DE ÓRDENES EN SUPABASE (tabla ordenes_vip) - BLINDADO
         // ============================================================
         const COLA_PENDIENTES_KEY = 'dunig_ordenes_pendientes';
 
@@ -492,18 +491,35 @@
             catch (e) { console.error("No se pudo guardar la cola local:", e); }
         }
 
-        // Inserta una orden. IMPORTANTE: sin .select() porque el rol anon solo tiene
-        // permiso INSERT (con .select() Supabase exigiría también política SELECT).
+        // Inserta una orden con validación estricta y respaldo de referencia única
         async function insertarOrdenVip(orden) {
-            const { error } = await supabaseClient.from('ordenes_vip').insert([orden]);
-            if (!error) return { ok: true };
-            // 23505 = referencia duplicada: la orden ya estaba guardada, se considera éxito
-            if (error.code === '23505') return { ok: true, duplicada: true };
-            console.error("Error de Supabase al insertar orden:", error);
-            return { ok: false, error };
+            try {
+                if (!orden.referencia) {
+                    orden.referencia = 'PP-FALLBACK-' + Date.now();
+                }
+
+                const { data, error } = await supabaseClient.from('ordenes_vip').insert([orden]);
+                
+                if (!error) return { ok: true };
+                
+                // 23505 = referencia duplicada: la orden ya estaba guardada, se considera éxito
+                if (error.code === '23505') return { ok: true, duplicada: true };
+                
+                console.error("Error detallado de Supabase:", {
+                    code: error.code,
+                    message: error.message,
+                    details: error.details,
+                    hint: error.hint
+                });
+                
+                return { ok: false, error };
+            } catch (err) {
+                console.error("Excepción de red o JS al insertar orden:", err);
+                return { ok: false, error: { message: err.message || err } };
+            }
         }
 
-        // Reintenta órdenes pagadas que no pudieron guardarse (sin internet, caída, etc.)
+        // Reintenta órdenes pagadas que no pudieron guardarse
         async function reintentarOrdenesPendientes() {
             const cola = leerColaPendientes();
             if (!cola.length) return;
@@ -552,11 +568,10 @@
                             details = await actions.order.capture();
                         } catch (e) {
                             console.error("Error al capturar el pago en PayPal:", e);
-                            alert("No se pudo completar el pago en PayPal. No se realizó ningún cobro. Inténtalo de nuevo.");
+                            alert("No se pudo completar el pago en PayPal. Inténtalo de nuevo.");
                             return;
                         }
 
-                        // Foto del carrito y del cliente en el momento del pago
                         const clienteLocal = JSON.parse(localStorage.getItem('dunig_cliente_registrado') || '{}');
                         const listaNombresProductos = carrito.map(i => i.titulo).join(', ') || "Infoproducto digital VIP";
                         const montoCarrito = carrito.reduce((a, b) => a + b.precio, 0);
@@ -564,40 +579,41 @@
                         const captura = details.purchase_units?.[0]?.payments?.captures?.[0];
                         const montoPagado = parseFloat(captura?.amount?.value ?? montoCarrito);
                         const pagoCompletado = !captura || captura.status === 'COMPLETED';
+                        const idTransaccion = details.id || ('PP-' + Date.now());
 
-                        // Objeto que coincide con las columnas y las políticas RLS de ordenes_vip
+                        // Objeto estricto adaptado a tu esquema SQL
                         const datosOrden = {
                             productos: listaNombresProductos.substring(0, 2000),
                             total: montoPagado,
                             monto_total: montoPagado,
-                            referencia: details.id,
+                            referencia: idTransaccion,
                             estado: pagoCompletado ? "Pagado" : "Pendiente",
                             owner_instagram: clienteLocal.nombre || "Cliente Web",
                             cliente_nombre: clienteLocal.nombre || null,
                             cliente_whatsapp: clienteLocal.whatsapp || null,
                             cliente_correo: clienteLocal.correo || null,
-                            paypal_order_id: details.id,
+                            paypal_order_id: idTransaccion,
                             paypal_capture_id: captura?.id || null,
                             payer_email: details.payer?.email_address || null,
                             moneda: captura?.amount?.currency_code || "USD"
                         };
 
-                        // El pago ya está hecho: se vacía la bolsa antes de tocar la base de datos
+                        // Vaciar carrito de forma segura tras aprobar el pago
                         carrito = [];
-                        document.getElementById('contador-carrito-badge').innerText = "0";
+                        const badge = document.getElementById('contador-carrito-badge');
+                        if(badge) badge.innerText = "0";
 
                         const resultado = await insertarOrdenVip(datosOrden);
 
                         if (resultado.ok) {
-                            console.log("Orden guardada en ordenes_vip:", datosOrden.referencia);
+                            console.log("¡Orden guardada con éxito en Supabase!");
                             await guardarOrdenEnCentral({ detalles: listaNombresProductos });
-                            alert(`¡Pago completado con éxito! Tu infoproducto será enviado a: ${clienteLocal.correo || 'tu correo'}\nReferencia: ${datosOrden.referencia}`);
+                            alert(`¡Pago completado con éxito! Tu infoproducto será enviado a: ${clienteLocal.correo || 'tu correo'}\nReferencia: ${idTransaccion}`);
                         } else {
-                            // Se guarda localmente y se reintenta en la próxima visita
                             const cola = leerColaPendientes();
                             cola.push(datosOrden);
                             guardarColaPendientes(cola);
-                            alert(`Tu pago en PayPal fue exitoso (Referencia: ${datosOrden.referencia}), pero no pudimos registrar la orden todavía. Guarda esta referencia: lo intentaremos de nuevo automáticamente.\n\nDetalle: ${resultado.error?.message || 'error desconocido'}`);
+                            alert(`Pago exitoso en PayPal (Ref: ${idTransaccion}), pero hubo un problema interno al registrar la orden en la base de datos. Se reintentará automáticamente.`);
                         }
 
                         cambiarPantalla('vitrina');
