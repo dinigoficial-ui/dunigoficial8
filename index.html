@@ -245,7 +245,6 @@
     </footer>
 
     <script>
-        <script>
         const SUPABASE_URL = "https://mivyqxzdslmxyhvzdvol.supabase.co";  
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pdnlxeHpkc2xteHlodnpkdm9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1MzY1NDAsImV4cCI6MjEwMTExMjU0MH0.tyW84m8agyt3b-XGSMsRie4QZZ382gF8hO3ERGV9nf4"; 
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -279,16 +278,29 @@
             localStorage.setItem('dunig_cliente_registrado', JSON.stringify(datosCliente));
             
             const modal = document.getElementById('modal-registro-cliente');
-            if (modal) modal.style.display = 'none';
+            if (modal) {
+                modal.style.display = 'none';
+                modal.classList.add('hidden');
+            }
+
+            // Cargar el catálogo y activar la vitrina de inmediato
+            await descargarCatalogoDeSupabase();
+            lucide.createIcons();
         }
 
         function verificarClienteRegistrado() {
             const clienteGuardado = localStorage.getItem('dunig_cliente_registrado');
             const modal = document.getElementById('modal-registro-cliente');
             if (clienteGuardado) {
-                if (modal) modal.style.display = 'none';
+                if (modal) {
+                    modal.style.display = 'none';
+                    modal.classList.add('hidden');
+                }
             } else {
-                if (modal) modal.style.display = 'flex';
+                if (modal) {
+                    modal.style.display = 'flex';
+                    modal.classList.remove('hidden');
+                }
             }
         }
 
@@ -631,7 +643,10 @@
 
         window.addEventListener('DOMContentLoaded', async () => {
             verificarClienteRegistrado();
-            await descargarCatalogoDeSupabase();
+            const clienteGuardado = localStorage.getItem('dunig_cliente_registrado');
+            if (clienteGuardado) {
+                await descargarCatalogoDeSupabase();
+            }
             lucide.createIcons();
             reintentarOrdenesPendientes();
         });
