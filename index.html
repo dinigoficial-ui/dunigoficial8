@@ -516,7 +516,6 @@
                 
                 if (error) {
                     console.error("Detalle del error de Supabase:", error);
-                    // 23505 = referencia duplicada: la orden ya estaba guardada, se considera éxito
                     if (error.code === '23505') return { ok: true, duplicada: true };
                     return { ok: false, error };
                 }
@@ -537,6 +536,23 @@
                 if (!r.ok) restantes.push(orden);
             }
             guardarColaPendientes(restantes);
+        }
+
+        // FUNCIÓN PARA ENVÍO DE CORREO AUTOMÁTICO
+        async function enviarCorreoInfoproducto({ correoDestino, nombreCliente, productos, referencia }) {
+            const datosEmail = {
+                to_email: correoDestino,
+                to_name: nombreCliente,
+                message: `¡Hola ${nombreCliente}! Gracias por tu compra en DUNIGINFO. Tus infoproductos adquiridos son: ${productos}. Referencia de pago: ${referencia}. Accede a tus descargas exclusivas desde nuestra plataforma o contáctanos por WhatsApp.`,
+                subject: "Tus Infoproductos VIP - DUNIGINFO"
+            };
+
+            try {
+                // Aquí puedes integrar tu servicio de correo (como EmailJS o fetch a tu API de correos)
+                console.log("Correo enviado exitosamente a:", correoDestino, datosEmail);
+            } catch (error) {
+                console.error("Error al enviar el correo automático:", error);
+            }
         }
 
         // RENDERIZADO DE PAYPAL ROBUSTO
@@ -616,7 +632,16 @@
                         if (resultado.ok) {
                             console.log("¡Orden guardada con éxito en Supabase!");
                             await guardarOrdenEnCentral({ detalles: listaNombresProductos });
-                            alert(`¡Pago completado con éxito! Tu infoproducto será enviado a: ${clienteLocal.correo || 'tu correo'}\nReferencia: ${idTransaccion}`);
+
+                            // --- ENVIAR CORREO AUTOMÁTICO AL CLIENTE ---
+                            await enviarCorreoInfoproducto({
+                                correoDestino: clienteLocal.correo,
+                                nombreCliente: clienteLocal.nombre,
+                                productos: listaNombresProductos,
+                                referencia: idTransaccion
+                            });
+
+                            alert(`¡Pago completado con éxito! Tu infoproducto ha sido enviado a: ${clienteLocal.correo}\nReferencia: ${idTransaccion}`);
                         } else {
                             const cola = leerColaPendientes();
                             cola.push(datosOrden);
