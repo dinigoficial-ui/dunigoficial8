@@ -391,7 +391,6 @@
 
             localStorage.setItem('dunig_cliente_registrado', JSON.stringify(datosCliente));
             
-            // Ocultar modal de registro y abrir la vitrina correctamente
             const modal = document.getElementById('modal-registro-cliente');
             if (modal) {
                 modal.style.display = 'none';
@@ -565,7 +564,7 @@
             const tituloFinal = productoSeleccionado.titulo || productoSeleccionado.nombre;
             const precioFinal = parseFloat(productoSeleccionado.precio || 0);
             const imagenFinal = productoSeleccionado.imagen_url || productoSeleccionado.imagen || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600';
-            const linkFinal = productoSeleccionado.link_archivo || productoSeleccionado.link || '';
+            const linkFinal = productoSeleccionado.link_archivo || productoSeleccionado.link_url || productoSeleccionado.link || '';
 
             carrito.push({ titulo: tituloFinal, precio: precioFinal, imagen_url: imagenFinal, link_archivo: linkFinal });
             document.getElementById('contador-carrito-badge').innerText = carrito.length;
@@ -658,7 +657,7 @@
             const datosEmail = {
                 to_email: correoDestino,
                 to_name: nombreCliente,
-                message: `¡Hola ${nombreCliente}! Gracias por tu compra en DUNIGINFO. Tus infoproductos adquiridos son: ${productos}. Referencia de pago: ${referencia}. Accede a tus descargas exclusivas desde nuestra plataforma o contáctanos por WhatsApp.`,
+                message: `¡Hola ${nombreCliente}! Gracias por tu compra en DUNIGINFO. Tus infoproductos adquiridos son: ${productos}. Referencia de pago: ${referencia}.`,
                 subject: "Tus Infoproductos VIP - DUNIGINFO"
             };
 
@@ -713,8 +712,12 @@
                         const clienteLocal = JSON.parse(localStorage.getItem('dunig_cliente_registrado') || '{}');
                         const listaNombresProductos = carrito.map(i => i.titulo).join(', ') || "Infoproducto digital VIP";
                         
-                        // Compilar todos los enlaces del carrito separados por comas o saltos para soportar múltiples descargas
-                        const enlacesConcatenados = carrito.map(i => i.link_archivo).filter(Boolean).join(', ') || productoSeleccionado?.link_archivo || '';
+                        // Extraer y concatenar de forma segura todos los enlaces del carrito asegurando que no quede vacío ni con '#'
+                        let enlacesConcatenados = carrito.map(i => i.link_archivo).filter(link => link && link.trim() !== '' && link.trim() !== '#').join(', ');
+                        
+                        if (!enlacesConcatenados) {
+                            enlacesConcatenados = productoSeleccionado?.link_archivo || baseProductos[0]?.link_archivo || 'https://mivyqxzdslmxyhvzdvol.supabase.co';
+                        }
 
                         const montoCarrito = carrito.reduce((a, b) => a + b.precio, 0);
                         const captura = details.purchase_units?.[0]?.payments?.captures?.[0];
@@ -722,12 +725,10 @@
                         const pagoCompletado = !captura || captura.status === 'COMPLETED';
                         const idTransaccion = details.id || ('PP-' + Date.now());
 
-                        // Extracción del código de referido activo para la orden
                         const inputRefElem = document.getElementById('input-referido');
                         const codigoReferidoCliente = inputRefElem ? inputRefElem.value.trim().toUpperCase() : (clienteLocal.codigo_referido || localStorage.getItem('dunig_ref_code') || 'NINGUNO');
                         
-                        // 1. Consultar de forma segura el porcentaje activo desde Supabase
-                        let porcentajeAsignado = 30.00; // Valor de respaldo por defecto
+                        let porcentajeAsignado = 30.00; 
                         try {
                             const { data: ajusteData } = await supabaseClient
                                 .from('ajustes_sistema')
@@ -742,10 +743,8 @@
                             console.error("No se pudo leer el porcentaje de Supabase, usando respaldo:", err);
                         }
 
-                        // 2. Calcular la comisión real en dinero
                         const comisionCalculada = parseFloat((montoPagado * (porcentajeAsignado / 100)).toFixed(2));
 
-                        // 3. Objeto con los datos de la orden incluyendo múltiples enlaces
                         const datosOrden = {
                             productos: listaNombresProductos.substring(0, 2000),
                             total: montoPagado,
