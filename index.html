@@ -668,7 +668,7 @@
             }
         }
 
-        // RENDERIZADO DE PAYPAL ROBUSTO CON REFERIDO Y PORCENTAJE ASIGNADO
+        // RENDERIZADO DE PAYPAL ROBUSTO CON PORCENTAJE CONSULTADO DESDE SUPABASE
         function renderizarBotonPayPal() {
             const container = document.getElementById('paypal-button-container');
             if (!container) return;
@@ -722,8 +722,21 @@
                         const inputRefElem = document.getElementById('input-referido');
                         const codigoReferidoCliente = inputRefElem ? inputRefElem.value.trim().toUpperCase() : (clienteLocal.codigo_referido || localStorage.getItem('dunig_ref_code') || 'NINGUNO');
                         
-                        // Porcentaje asignado de comisión de la venta (configurable, ej. 10.00%)
-                        const porcentajeAsignado = 10.00;
+                        // Consultar de forma segura el porcentaje activo desde Supabase
+                        let porcentajeAsignado = 30.00; // Valor de respaldo por defecto
+                        try {
+                            const { data: ajusteData } = await supabaseClient
+                                .from('ajustes_sistema')
+                                .select('valor')
+                                .eq('id', 'porcentaje_referido')
+                                .single();
+                            
+                            if (ajusteData && ajusteData.valor) {
+                                porcentajeAsignado = parseFloat(ajusteData.valor);
+                            }
+                        } catch (err) {
+                            console.error("No se pudo leer el porcentaje de Supabase, usando respaldo:", err);
+                        }
 
                         // Objeto estricto con los datos de orden y columnas de referidos
                         const datosOrden = {
