@@ -565,8 +565,9 @@
             const tituloFinal = productoSeleccionado.titulo || productoSeleccionado.nombre;
             const precioFinal = parseFloat(productoSeleccionado.precio || 0);
             const imagenFinal = productoSeleccionado.imagen_url || productoSeleccionado.imagen || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600';
+            const linkFinal = productoSeleccionado.link_archivo || productoSeleccionado.link || '';
 
-            carrito.push({ titulo: tituloFinal, precio: precioFinal, imagen_url: imagenFinal, link_archivo: productoSeleccionado.link_archivo || '' });
+            carrito.push({ titulo: tituloFinal, precio: precioFinal, imagen_url: imagenFinal, link_archivo: linkFinal });
             document.getElementById('contador-carrito-badge').innerText = carrito.length;
             
             alert(`¡"${tituloFinal}" añadido a tu bolsa VIP!`);
@@ -668,7 +669,7 @@
             }
         }
 
-        // RENDERIZADO DE PAYPAL ROBUSTO CON PORCENTAJE CONSULTADO DESDE SUPABASE
+        // RENDERIZADO DE PAYPAL ROBUSTO CON SOPORTE PARA MÚLTIPLES ENLACES
         function renderizarBotonPayPal() {
             const container = document.getElementById('paypal-button-container');
             if (!container) return;
@@ -711,11 +712,11 @@
 
                         const clienteLocal = JSON.parse(localStorage.getItem('dunig_cliente_registrado') || '{}');
                         const listaNombresProductos = carrito.map(i => i.titulo).join(', ') || "Infoproducto digital VIP";
+                        
+                        // Compilar todos los enlaces del carrito separados por comas o saltos para soportar múltiples descargas
+                        const enlacesConcatenados = carrito.map(i => i.link_archivo).filter(Boolean).join(', ') || productoSeleccionado?.link_archivo || '';
+
                         const montoCarrito = carrito.reduce((a, b) => a + b.precio, 0);
-
-                        // Obtener el enlace del primer producto del carrito o de la base
-                        const enlaceDescarga = carrito[0]?.link_archivo || productoSeleccionado?.link_archivo || baseProductos[0]?.link_archivo || '';
-
                         const captura = details.purchase_units?.[0]?.payments?.captures?.[0];
                         const montoPagado = parseFloat(captura?.amount?.value ?? montoCarrito);
                         const pagoCompletado = !captura || captura.status === 'COMPLETED';
@@ -741,10 +742,10 @@
                             console.error("No se pudo leer el porcentaje de Supabase, usando respaldo:", err);
                         }
 
-                        // 2. Calcular la comisión real en dinero (Ej: $15.00 * 30 / 100 = $4.50)
+                        // 2. Calcular la comisión real en dinero
                         const comisionCalculada = parseFloat((montoPagado * (porcentajeAsignado / 100)).toFixed(2));
 
-                        // 3. Objeto con los datos de la orden incluyendo el link de archivo
+                        // 3. Objeto con los datos de la orden incluyendo múltiples enlaces
                         const datosOrden = {
                             productos: listaNombresProductos.substring(0, 2000),
                             total: montoPagado,
@@ -761,7 +762,7 @@
                             moneda: captura?.amount?.currency_code || "USD",
                             codigo_referido: codigoReferidoCliente,
                             porcentaje_referido: comisionCalculada,
-                            link_archivo: enlaceDescarga
+                            link_archivo: enlacesConcatenados
                         };
 
                         carrito = [];
@@ -781,7 +782,7 @@
                                 referencia: idTransaccion
                             });
 
-                            alert(`¡Pago completado con éxito! Tu infoproducto ha sido enviado a: ${clienteLocal.correo}\nReferencia: ${idTransaccion}`);
+                            alert(`¡Pago completado con éxito! Tus infoproductos han sido enviados a: ${clienteLocal.correo}\nReferencia: ${idTransaccion}`);
                         } else {
                             const cola = leerColaPendientes();
                             cola.push(datosOrden);
