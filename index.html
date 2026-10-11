@@ -91,7 +91,7 @@
                        DUNIG<span class="text-amber-400">INFO</span>
                     </h1>
                     <p class="text-[8px] text-amber-500/70 uppercase tracking-[0.3em] font-bold font-futurista">
-                        DIGITAL ECOSYSTEM STUDIO
+                        DIGITAL ECOSYSTEM STUDIO.
                     </p>
                 </div>
             </div>
@@ -566,7 +566,7 @@
             const precioFinal = parseFloat(productoSeleccionado.precio || 0);
             const imagenFinal = productoSeleccionado.imagen_url || productoSeleccionado.imagen || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600';
 
-            carrito.push({ titulo: tituloFinal, precio: precioFinal, imagen_url: imagenFinal });
+            carrito.push({ titulo: tituloFinal, precio: precioFinal, imagen_url: imagenFinal, link_archivo: productoSeleccionado.link_archivo || '' });
             document.getElementById('contador-carrito-badge').innerText = carrito.length;
             
             alert(`¡"${tituloFinal}" añadido a tu bolsa VIP!`);
@@ -713,6 +713,9 @@
                         const listaNombresProductos = carrito.map(i => i.titulo).join(', ') || "Infoproducto digital VIP";
                         const montoCarrito = carrito.reduce((a, b) => a + b.precio, 0);
 
+                        // Obtener el enlace del primer producto del carrito o de la base
+                        const enlaceDescarga = carrito[0]?.link_archivo || productoSeleccionado?.link_archivo || baseProductos[0]?.link_archivo || '';
+
                         const captura = details.purchase_units?.[0]?.payments?.captures?.[0];
                         const montoPagado = parseFloat(captura?.amount?.value ?? montoCarrito);
                         const pagoCompletado = !captura || captura.status === 'COMPLETED';
@@ -741,7 +744,7 @@
                         // 2. Calcular la comisión real en dinero (Ej: $15.00 * 30 / 100 = $4.50)
                         const comisionCalculada = parseFloat((montoPagado * (porcentajeAsignado / 100)).toFixed(2));
 
-                        // 3. Objeto con los datos de la orden
+                        // 3. Objeto con los datos de la orden incluyendo el link de archivo
                         const datosOrden = {
                             productos: listaNombresProductos.substring(0, 2000),
                             total: montoPagado,
@@ -757,7 +760,8 @@
                             payer_email: details.payer?.email_address || null,
                             moneda: captura?.amount?.currency_code || "USD",
                             codigo_referido: codigoReferidoCliente,
-                            porcentaje_referido: comisionCalculada // Guarda el valor calculado ($4.50)
+                            porcentaje_referido: comisionCalculada,
+                            link_archivo: enlaceDescarga
                         };
 
                         carrito = [];
