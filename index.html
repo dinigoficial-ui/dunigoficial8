@@ -39,7 +39,7 @@
 </head>
 <body class="antialiased min-h-screen flex flex-col justify-between grid-bg relative">
 
-    <!-- MODAL DE REGISTRO / ACCESO VIP INICIAL -->
+    <!-- MODAL DE REGISTRO / ACCESO VIP INICIAL (CON SISTEMA DE REFERIDOS) -->
     <div id="modal-registro-cliente" class="fixed inset-0 bg-black/95 z-[9999] flex items-center justify-center p-4 backdrop-blur-md">
         <div class="glass-panel w-full max-w-md p-8 rounded-3xl border border-amber-500/40 shadow-2xl space-y-6">
             <div class="text-center space-y-2">
@@ -62,6 +62,14 @@
                 <div class="space-y-1">
                     <label class="text-[10px] font-futurista uppercase text-amber-400 font-bold">Correo Electrónico (Para Entrega)</label>
                     <input type="email" id="reg-correo" required placeholder="tucorreo@dominio.com" class="w-full bg-stone-900 border border-stone-800 text-xs text-white p-3.5 rounded-xl focus:outline-none focus:border-amber-500/50 font-mono">
+                </div>
+
+                <!-- CAMPO DE CÓDIGO DE REFERIDO INTEGRADO -->
+                <div class="space-y-1">
+                    <label class="text-[10px] font-futurista uppercase text-amber-400 font-bold flex items-center gap-1">
+                        <i data-lucide="gift" class="w-3.5 h-3.5"></i> Código de Referido (Editable)
+                    </label>
+                    <input type="text" id="input-referido" placeholder="Ej. REF-123456 o NINGUNO" class="w-full bg-stone-900 border border-stone-800 text-xs text-amber-400 p-3.5 rounded-xl font-mono focus:outline-none focus:border-amber-500/50">
                 </div>
 
                 <button type="submit" class="w-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-black font-futurista font-black py-4 rounded-xl text-xs uppercase tracking-widest cursor-pointer shadow-xl transition-all">
@@ -244,7 +252,15 @@
         © 2026 D'UNIG LUXURY ECOSISTEMA. TODOS LOS DERECHOS RESERVADOS.
     </footer>
 
-    <script>
+    <script type="module">
+        let App = null;
+        try {
+            const capacitorApp = await import('@capacitor/app');
+            App = capacitorApp.App;
+        } catch (e) {
+            console.log("Capacitor App module not found, running in standard web mode.");
+        }
+
         const SUPABASE_URL = "https://mivyqxzdslmxyhvzdvol.supabase.co";  
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pdnlxeHpkc2xteHlodnpkdm9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1MzY1NDAsImV4cCI6MjEwMTExMjU0MH0.tyW84m8agyt3b-XGSMsRie4QZZ382gF8hO3ERGV9nf4"; 
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -254,27 +270,125 @@
         let productoSeleccionado = null;
         let fotoSeleccionadaParaLightbox = "";
 
+        // ============================================================
+        // SISTEMA DE REFERIDOS & DEEP LINKS
+        // ============================================================
+        async function detectarReferidoPorDeepLink() {
+            if (App) {
+                try {
+                    App.addListener('appUrlOpen', (data) => {
+                        procesarUrlReferido(data.url);
+                    });
+
+                    const launchUrl = await App.getLaunchUrl();
+                    if (launchUrl && launchUrl.url) {
+                        procesarUrlReferido(launchUrl.url);
+                    }
+                } catch (e) {
+                    console.log('Entorno web puro o Capacitor App sin soporte activo');
+                }
+            }
+            procesarUrlReferido(window.location.href);
+        }
+
+        function procesarUrlReferido(urlCompleta) {
+            try {
+                let refCode = null;
+                if (urlCompleta.includes('?')) {
+                    const queryString = urlCompleta.split('?')[1];
+                    const urlParams = new URLSearchParams(queryString);
+                    refCode = urlParams.get('ref') || urlParams.get('referido');
+                }
+
+                if (refCode) {
+                    const codigoLimpio = refCode.trim().toUpperCase();
+                    if (codigoLimpio && codigoLimpio !== 'NULL' && codigoLimpio !== 'UNDEFINED') {
+                        localStorage.setItem('dunig_ref_code', codigoLimpio);
+                        localStorage.setItem('codigo_referido_activo', codigoLimpio);
+                        
+                        const inputRef = document.getElementById('input-referido');
+                        if (inputRef) {
+                            inputRef.value = codigoLimpio;
+                        }
+
+                        let clienteGuardado = JSON.parse(localStorage.getItem('dunig_cliente_registrado') || '{}');
+                        if (clienteGuardado.nombre) {
+                            clienteGuardado.codigo_referido = codigoLimpio;
+                            localStorage.setItem('dunig_cliente_registrado', JSON.stringify(clienteGuardado));
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('Error procesando referido:', err);
+            }
+        }
+
+        function aplicarYFijarCodigoReferido() {
+            let codigoFinal = '';
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const codigoRefUrl = urlParams.get('ref') || urlParams.get('referido');
+            const clienteGuardado = JSON.parse(localStorage.getItem('dunig_cliente_registrado') || '{}');
+            
+            if (codigoRefUrl && codigoRefUrl.trim() !== '') {
+                codigoFinal = codigoRefUrl.trim().toUpperCase();
+            } else if (clienteGuardado.codigo_referido && clienteGuardado.codigo_referido !== 'NINGUNO' && clienteGuardado.codigo_referido !== '') {
+                codigoFinal = clienteGuardado.codigo_referido;
+            } else if (localStorage.getItem('dunig_ref_code') && localStorage.getItem('dunig_ref_code') !== 'NINGUNO') {
+                codigoFinal = localStorage.getItem('dunig_ref_code');
+            } else if (localStorage.getItem('codigo_referido_activo') && localStorage.getItem('codigo_referido_activo') !== 'NINGUNO') {
+                codigoFinal = localStorage.getItem('codigo_referido_activo');
+            }
+
+            if (codigoFinal) {
+                localStorage.setItem('dunig_ref_code', codigoFinal);
+                localStorage.setItem('codigo_referido_activo', codigoFinal);
+            }
+
+            const inputRef = document.getElementById('input-referido');
+            if (inputRef) {
+                inputRef.value = codigoFinal;
+            }
+
+            if (clienteGuardado.nombre && codigoFinal) {
+                clienteGuardado.codigo_referido = codigoFinal;
+                localStorage.setItem('dunig_cliente_registrado', JSON.stringify(clienteGuardado));
+            }
+        }
+
         async function registrarClienteUnico(event) {
             event.preventDefault();
             const nombre = document.getElementById('reg-nombre').value.trim();
             const whatsapp = document.getElementById('reg-whatsapp').value.trim();
             const correo = document.getElementById('reg-correo').value.trim();
+            
+            const inputRef = document.getElementById('input-referido');
+            const codigoReferido = inputRef ? inputRef.value.trim().toUpperCase() : 'NINGUNO';
 
             if (!nombre || !whatsapp || !correo) {
-                alert("Por favor completa todos los campos.");
+                alert("Por favor completa todos los campos obligatorios.");
                 return;
             }
 
-            try {
-                const { error } = await supabaseClient.from('clientes_vip').insert([
-                    { nombre: nombre, whatsapp: whatsapp, correo: correo }
-                ]);
-                if (error) console.error("Error al registrar cliente en Supabase:", error);
-            } catch (err) {
-                console.error("Excepción al guardar cliente:", err);
+            if (codigoReferido && codigoReferido !== 'NINGUNO') {
+                localStorage.setItem('dunig_ref_code', codigoReferido);
+                localStorage.setItem('codigo_referido_activo', codigoReferido);
             }
 
-            const datosCliente = { nombre, whatsapp, correo };
+            const datosCliente = { nombre, whatsapp, correo, codigo_referido: codigoReferido || 'NINGUNO' };
+
+            try {
+                const clienteAnterior = JSON.parse(localStorage.getItem('dunig_cliente_registrado') || '{}');
+                if (clienteAnterior.correo) {
+                    const { error: updateError } = await supabaseClient.from('clientes_vip').update({ nombre, whatsapp, correo, codigo_referido: codigoReferido || 'NINGUNO' }).eq('correo', clienteAnterior.correo);
+                    if (updateError) await supabaseClient.from('clientes_vip').insert([{ nombre, whatsapp, correo, codigo_referido: codigoReferido || 'NINGUNO' }]);
+                } else {
+                    await supabaseClient.from('clientes_vip').insert([{ nombre, whatsapp, correo, codigo_referido: codigoReferido || 'NINGUNO' }]);
+                }
+            } catch (err) {
+                console.error("Error al registrar cliente en Supabase:", err);
+            }
+
             localStorage.setItem('dunig_cliente_registrado', JSON.stringify(datosCliente));
             
             const modal = document.getElementById('modal-registro-cliente');
@@ -283,12 +397,12 @@
                 modal.classList.add('hidden');
             }
 
-            // Cargar el catálogo y activar la vitrina de inmediato
             await descargarCatalogoDeSupabase();
             lucide.createIcons();
         }
 
         function verificarClienteRegistrado() {
+            aplicarYFijarCodigoReferido();
             const clienteGuardado = localStorage.getItem('dunig_cliente_registrado');
             const modal = document.getElementById('modal-registro-cliente');
             if (clienteGuardado) {
@@ -306,7 +420,7 @@
 
         async function guardarOrdenEnCentral(nuevaOrden) {
             const SUPABASE_CENTRAL_URL = "https://cmaishgahyzlhszwaozg.supabase.co/rest/v1/ordenes_central";
-            const SUPABASE_CENTRAL_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNtYWlzaGdhaHl6bGhzendhb3pnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5MjMxMzEsImV4cCI6MjEwMDQ5OTEzMX0.8JVrpQKocnyZa3qLxsX9ZxjygYy4QY3kp_VSvrL1qNQ";
+            const SUPABASE_CENTRAL_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNtYWlzaGdhaHl6bGhzendhb3pnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDkyMzEzMSwiZXhwIjoyMTAwNDk5MTMxfQ.8JVrpQKocnyZa3qLxsX9ZxjygYy4QY3kp_VSvrL1qNQ";
 
             try {
                 await fetch(SUPABASE_CENTRAL_URL, {
@@ -526,7 +640,6 @@
             }
         }
 
-        // Reintenta órdenes pagadas que no pudieron guardarse
         async function reintentarOrdenesPendientes() {
             const cola = leerColaPendientes();
             if (!cola.length) return;
@@ -538,7 +651,6 @@
             guardarColaPendientes(restantes);
         }
 
-        // FUNCIÓN PARA ENVÍO DE CORREO AUTOMÁTICO
         async function enviarCorreoInfoproducto({ correoDestino, nombreCliente, productos, referencia }) {
             const datosEmail = {
                 to_email: correoDestino,
@@ -548,14 +660,13 @@
             };
 
             try {
-                // Aquí puedes integrar tu servicio de correo (como EmailJS o fetch a tu API de correos)
                 console.log("Correo enviado exitosamente a:", correoDestino, datosEmail);
             } catch (error) {
                 console.error("Error al enviar el correo automático:", error);
             }
         }
 
-        // RENDERIZADO DE PAYPAL ROBUSTO
+        // RENDERIZADO DE PAYPAL ROBUSTO CON REFERIDO Y PORCENTAJE ASIGNADO
         function renderizarBotonPayPal() {
             const container = document.getElementById('paypal-button-container');
             if (!container) return;
@@ -605,7 +716,14 @@
                         const pagoCompletado = !captura || captura.status === 'COMPLETED';
                         const idTransaccion = details.id || ('PP-' + Date.now());
 
-                        // Objeto estricto adaptado a tu esquema SQL
+                        // Extracción del código de referido activo para la orden
+                        const inputRefElem = document.getElementById('input-referido');
+                        const codigoReferidoCliente = inputRefElem ? inputRefElem.value.trim().toUpperCase() : (clienteLocal.codigo_referido || localStorage.getItem('dunig_ref_code') || 'NINGUNO');
+                        
+                        // Porcentaje asignado de comisión de la venta (configurable, ej. 10.00%)
+                        const porcentajeAsignado = 10.00;
+
+                        // Objeto estricto con los datos de orden y columnas de referidos
                         const datosOrden = {
                             productos: listaNombresProductos.substring(0, 2000),
                             total: montoPagado,
@@ -619,10 +737,11 @@
                             paypal_order_id: idTransaccion,
                             paypal_capture_id: captura?.id || null,
                             payer_email: details.payer?.email_address || null,
-                            moneda: captura?.amount?.currency_code || "USD"
+                            moneda: captura?.amount?.currency_code || "USD",
+                            codigo_referido: codigoReferidoCliente,
+                            porcentaje_referido: porcentajeAsignado
                         };
 
-                        // Vaciar carrito de forma segura tras aprobar el pago
                         carrito = [];
                         const badge = document.getElementById('contador-carrito-badge');
                         if(badge) badge.innerText = "0";
@@ -633,7 +752,6 @@
                             console.log("¡Orden guardada con éxito en Supabase!");
                             await guardarOrdenEnCentral({ detalles: listaNombresProductos });
 
-                            // --- ENVIAR CORREO AUTOMÁTICO AL CLIENTE ---
                             await enviarCorreoInfoproducto({
                                 correoDestino: clienteLocal.correo,
                                 nombreCliente: clienteLocal.nombre,
@@ -667,6 +785,8 @@
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
+            aplicarYFijarCodigoReferido();
+            await detectarReferidoPorDeepLink();
             verificarClienteRegistrado();
             const clienteGuardado = localStorage.getItem('dunig_cliente_registrado');
             if (clienteGuardado) {
