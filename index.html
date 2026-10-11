@@ -91,7 +91,7 @@
                        DUNIG<span class="text-amber-400">INFO</span>
                     </h1>
                     <p class="text-[8px] text-amber-500/70 uppercase tracking-[0.3em] font-bold font-futurista">
-                        DIGITAL ECOSYSTEM STUDIO.
+                        DIGITAL ECOSYSTEM STUDIO
                     </p>
                 </div>
             </div>
@@ -722,7 +722,7 @@
                         const inputRefElem = document.getElementById('input-referido');
                         const codigoReferidoCliente = inputRefElem ? inputRefElem.value.trim().toUpperCase() : (clienteLocal.codigo_referido || localStorage.getItem('dunig_ref_code') || 'NINGUNO');
                         
-                        // Consultar de forma segura el porcentaje activo desde Supabase
+                        // 1. Consultar de forma segura el porcentaje activo desde Supabase
                         let porcentajeAsignado = 30.00; // Valor de respaldo por defecto
                         try {
                             const { data: ajusteData } = await supabaseClient
@@ -738,7 +738,10 @@
                             console.error("No se pudo leer el porcentaje de Supabase, usando respaldo:", err);
                         }
 
-                        // Objeto estricto con los datos de orden y columnas de referidos
+                        // 2. Calcular la comisión real en dinero (Ej: $15.00 * 30 / 100 = $4.50)
+                        const comisionCalculada = parseFloat((montoPagado * (porcentajeAsignado / 100)).toFixed(2));
+
+                        // 3. Objeto con los datos de la orden
                         const datosOrden = {
                             productos: listaNombresProductos.substring(0, 2000),
                             total: montoPagado,
@@ -754,7 +757,7 @@
                             payer_email: details.payer?.email_address || null,
                             moneda: captura?.amount?.currency_code || "USD",
                             codigo_referido: codigoReferidoCliente,
-                            porcentaje_referido: porcentajeAsignado
+                            porcentaje_referido: comisionCalculada // Guarda el valor calculado ($4.50)
                         };
 
                         carrito = [];
