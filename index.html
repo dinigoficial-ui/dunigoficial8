@@ -356,7 +356,7 @@
             }
         }
 
-        async function registrarClienteUnico(event) {
+        window.registrarClienteUnico = async function(event) {
             event.preventDefault();
             const nombre = document.getElementById('reg-nombre').value.trim();
             const whatsapp = document.getElementById('reg-whatsapp').value.trim();
@@ -391,6 +391,7 @@
 
             localStorage.setItem('dunig_cliente_registrado', JSON.stringify(datosCliente));
             
+            // Ocultar modal de registro y abrir la vitrina correctamente
             const modal = document.getElementById('modal-registro-cliente');
             if (modal) {
                 modal.style.display = 'none';
@@ -398,10 +399,11 @@
             }
 
             await descargarCatalogoDeSupabase();
+            window.cambiarPantalla('vitrina');
             lucide.createIcons();
         }
 
-        function verificarClienteRegistrado() {
+        window.verificarClienteRegistrado = function() {
             aplicarYFijarCodigoReferido();
             const clienteGuardado = localStorage.getItem('dunig_cliente_registrado');
             const modal = document.getElementById('modal-registro-cliente');
@@ -420,7 +422,7 @@
 
         async function guardarOrdenEnCentral(nuevaOrden) {
             const SUPABASE_CENTRAL_URL = "https://cmaishgahyzlhszwaozg.supabase.co/rest/v1/ordenes_central";
-            const SUPABASE_CENTRAL_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNtYWlzaGdhaHl6bGhzendhb3pnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDkyMzEzMSwiZXhwIjoyMTAwNDk5MTMxfQ.8JVrpQKocnyZa3qLxsX9ZxjygYy4QY3kp_VSvrL1qNQ";
+            const SUPABASE_CENTRAL_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNtYWlzaGdhaHl6bGhzendhb3pnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5MjMxMzEsImV4cCI6MjEwMDQ5OTEzMX0.8JVrpQKocnyZa3qLxsX9ZxjygYy4QY3kp_VSvrL1qNQ";
 
             try {
                 await fetch(SUPABASE_CENTRAL_URL, {
@@ -444,7 +446,7 @@
             }
         }
 
-        function cambiarPantalla(nombre) {
+        window.cambiarPantalla = function(nombre) {
             ['vitrina', 'detalle', 'carrito'].forEach(v => {
                 const el = document.getElementById(`vista-${v}`);
                 if(el) el.classList.add('hidden');
@@ -500,7 +502,7 @@
             lucide.createIcons();
         }
 
-        function filtrarProductosVitrina() {
+        window.filtrarProductosVitrina = function() {
             const textoBusqueda = document.getElementById('input-buscador-vitrina').value.toLowerCase();
             const tarjetas = document.querySelectorAll('#grid-productos-vitrina > div'); 
             tarjetas.forEach(tarjeta => {
@@ -509,12 +511,12 @@
             });
         }
 
-        function limpiarBuscadorVitrina() {
+        window.limpiarBuscadorVitrina = function() {
             const input = document.getElementById('input-buscador-vitrina');
             if (input) { input.value = ''; filtrarProductosVitrina(); }
         }
 
-        function verDetalleDeProducto(idProducto) {
+        window.verDetalleDeProducto = function(idProducto) {
             productoSeleccionado = baseProductos.find(p => p.id === idProducto); 
             if (!productoSeleccionado) return;
 
@@ -539,12 +541,12 @@
             setTimeout(() => lucide.createIcons(), 50);
         }
 
-        function actualizarVisorFoto(url) {
+        window.actualizarVisorFoto = function(url) {
             fotoSeleccionadaParaLightbox = url;
             document.getElementById('detalle-visor-principal').src = url;
         }
 
-        function amplificarFotoActual() {
+        window.amplificarFotoActual = function() {
             if(!fotoSeleccionadaParaLightbox) return;
             const lightbox = document.getElementById('modal-lightbox');
             document.getElementById('lightbox-imagen-completa').src = fotoSeleccionadaParaLightbox;
@@ -552,12 +554,12 @@
             document.body.style.overflow = 'hidden';
         }
 
-        function cerrarAmplificacion() {
+        window.cerrarAmplificacion = function() {
             document.getElementById('modal-lightbox').classList.add('hidden');
             document.body.style.overflow = 'auto';
         }
 
-        function agregarDetalleAlCarritoYVolver() {
+        window.agregarDetalleAlCarritoYVolver = function() {
             if (!productoSeleccionado) return;
 
             const tituloFinal = productoSeleccionado.titulo || productoSeleccionado.nombre;
@@ -568,7 +570,7 @@
             document.getElementById('contador-carrito-badge').innerText = carrito.length;
             
             alert(`¡"${tituloFinal}" añadido a tu bolsa VIP!`);
-            cambiarPantalla('vitrina');
+            window.cambiarPantalla('vitrina');
         }
 
         function renderizarCarrito() {
@@ -767,7 +769,7 @@
                             alert(`Pago exitoso en PayPal (Ref: ${idTransaccion}), pero hubo un problema interno al registrar la orden en la base de datos. Se reintentará automáticamente.`);
                         }
 
-                        cambiarPantalla('vitrina');
+                        window.cambiarPantalla('vitrina');
                     },
 
                     onCancel: function() {
