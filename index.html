@@ -506,13 +506,13 @@
             const datosCliente = { nombre, whatsapp, correo, codigo_referido: codigoReferido || 'NINGUNO' };
 
             try {
-                const clienteAnterior = JSON.parse(localStorage.getItem('dunig_cliente_registrado') || '{}');
-                if (clienteAnterior.correo) {
-                    const { error: updateError } = await supabaseClient.from('clientes_vip').update({ nombre, whatsapp, correo, codigo_referido: codigoReferido || 'NINGUNO' }).eq('correo', clienteAnterior.correo);
-                    if (updateError) await supabaseClient.from('clientes_vip').insert([{ nombre, whatsapp, correo, codigo_referido: codigoReferido || 'NINGUNO' }]);
-                } else {
-                    await supabaseClient.from('clientes_vip').insert([{ nombre, whatsapp, correo, codigo_referido: codigoReferido || 'NINGUNO' }]);
-                }
+                // Se usa upsert para insertar o actualizar de forma limpia sin romper el flujo
+                await supabaseClient.from('clientes_vip').upsert([{ 
+                    nombre, 
+                    whatsapp, 
+                    correo, 
+                    codigo_referido: codigoReferido || 'NINGUNO' 
+                }], { onConflict: 'correo' });
             } catch (err) {
                 console.error("Error al registrar cliente en Supabase:", err);
             }
@@ -546,7 +546,6 @@
                 }
             }
         }
-
         async function guardarOrdenEnCentral(nuevaOrden) {
             const SUPABASE_CENTRAL_URL = "https://cmaishgahyzlhszwaozg.supabase.co/rest/v1/ordenes_central";
             const SUPABASE_CENTRAL_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNtYWlzaGdhaHl6bGhzendhb3pnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5MjMxMzEsImV4cCI6MjEwMDQ5OTEzMX0.8JVrpQKocnyZa3qLxsX9ZxjygYy4QY3kp_VSvrL1qNQ";
