@@ -498,36 +498,19 @@
                 return;
             }
 
-            if (codigoReferido && codigoReferido !== 'NINGUNO') {
-                localStorage.setItem('dunig_ref_code', codigoReferido);
-                localStorage.setItem('codigo_referido_activo', codigoReferido);
-            }
-
             const datosCliente = { nombre, whatsapp, correo, codigo_referido: codigoReferido || 'NINGUNO' };
-
-            try {
-                // Se usa upsert para insertar o actualizar de forma limpia sin romper el flujo
-                await supabaseClient.from('clientes_vip').upsert([{ 
-                    nombre, 
-                    whatsapp, 
-                    correo, 
-                    codigo_referido: codigoReferido || 'NINGUNO' 
-                }], { onConflict: 'correo' });
-            } catch (err) {
-                console.error("Error al registrar cliente en Supabase:", err);
-            }
-
             localStorage.setItem('dunig_cliente_registrado', JSON.stringify(datosCliente));
-            
+
+            // Ocultar modal de registro
             const modal = document.getElementById('modal-registro-cliente');
             if (modal) {
                 modal.style.display = 'none';
                 modal.classList.add('hidden');
             }
 
+            // Descargar catálogo y mostrar vitrina
             await descargarCatalogoDeSupabase();
             window.cambiarPantalla('vitrina');
-            lucide.createIcons();
         }
 
         window.verificarClienteRegistrado = function() {
@@ -546,6 +529,7 @@
                 }
             }
         }
+
         async function guardarOrdenEnCentral(nuevaOrden) {
             const SUPABASE_CENTRAL_URL = "https://cmaishgahyzlhszwaozg.supabase.co/rest/v1/ordenes_central";
             const SUPABASE_CENTRAL_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNtYWlzaGdhaHl6bGhzendhb3pnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5MjMxMzEsImV4cCI6MjEwMDQ5OTEzMX0.8JVrpQKocnyZa3qLxsX9ZxjygYy4QY3kp_VSvrL1qNQ";
@@ -939,3 +923,68 @@
                                 nombreCliente: clienteLocal.nombre,
                                 productos: listaNombresProductos,
                                 referencia: idTransaccion
+                            });
+
+                            alert(`¡Pago completado con éxito! Tus infoproductos han sido enviados a: ${clienteLocal.correo}\nReferencia: ${idTransaccion}`);
+                        } else {
+                            const cola = leerColaPendientes();
+                            cola.push(datosOrden);
+                            guardarColaPendientes(cola);
+                            alert(`Pago exitoso en PayPal (Ref: ${idTransaccion}), pero hubo un problema interno al registrar la orden en la base de datos. Se reintentará automáticamente.`);
+                        }
+
+                        window.cambiarPantalla('vitrina');
+                    },
+
+                    onCancel: function() {
+                        console.log("El cliente canceló el pago en PayPal.");
+                    },
+
+                    onError: function(err) {
+                        console.error("Error de PayPal:", err);
+                        alert("Ocurrió un error con PayPal. Si se te cobró, contáctanos con tu comprobante de pago.");
+                    }
+                }).render('#paypal-button-container');
+            } catch (e) {
+                console.error("Error al renderizar botones de PayPal:", e);
+            }
+        }
+
+        window.mostrarQrApk = function() {
+            const urlApp = 'https://raw.githubusercontent.com/dinigoficial-ui/dunigoficial8/main/app-debug.apk';
+            const modal = document.getElementById('modal-qr');
+            const contenedor = document.getElementById('contenedor-qr');
+            
+            contenedor.innerHTML = "";
+            
+            new QRCode(contenedor, {
+                text: urlApp,
+                width: 170,
+                height: 170,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            
+            modal.classList.remove('hidden');
+        }
+
+        window.cerrarModalQr = function() {
+            document.getElementById('modal-qr').classList.add('hidden');
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            aplicarYFijarCodigoReferido();
+            await detectarReferidoPorDeepLink();
+            verificarClienteRegistrado();
+            iniciarCarrusel();
+            const clienteGuardado = localStorage.getItem('dunig_cliente_registrado');
+            if (clienteGuardado) {
+                await descargarCatalogoDeSupabase();
+            }
+            lucide.createIcons();
+            reintentarOrdenesPendientes();
+        });
+    </script>
+</body>
+</html>
