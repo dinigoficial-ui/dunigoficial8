@@ -73,7 +73,6 @@
             </h3>
             <p class="text-xs text-gray-400">Escanea con la cámara de tu teléfono para acceder a la plataforma digital.</p>
             
-            <!-- Contenedor QR -->
             <div id="contenedor-qr" class="bg-white p-4 rounded-xl flex items-center justify-center mx-auto w-fit"></div>
             
             <button onclick="cerrarModalQr()" class="w-full btn-matrix font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider cursor-pointer">
@@ -107,7 +106,6 @@
                     <input type="email" id="reg-correo" required placeholder="tucorreo@dominio.com" class="w-full bg-[#050806] border border-[#1a3322] text-xs text-white p-3.5 rounded-xl focus:outline-none focus:border-[#00ff66] font-mono">
                 </div>
 
-                <!-- CAMPO DE CÓDIGO DE REFERIDO INTEGRADO -->
                 <div class="space-y-1">
                     <label class="text-[10px] font-futurista uppercase text-[#00ff66] font-bold flex items-center gap-1">
                         <i data-lucide="gift" class="w-3.5 h-3.5"></i> Código de Referido (Editable)
@@ -124,7 +122,6 @@
 
     <!-- CONTENEDOR FIJO AL ESCROLEAR (HEADER + CARRUSEL / PORTADA) -->
     <div class="sticky top-0 z-50 bg-[#000000] shadow-md border-b border-[#00ff66]/20">
-        <!-- HEADER ESTILO MATRIX -->
         <header class="bg-black/90 backdrop-blur-xl px-4">
             <div class="max-w-7xl mx-auto h-20 flex items-center justify-between">
                 <div class="flex items-center gap-3 cursor-pointer" onclick="cambiarPantalla('vitrina')">
@@ -147,7 +144,6 @@
                         <span class="text-[#00ff66] uppercase tracking-widest">SISTEMA ACTIVO 24/7</span>
                     </div>
 
-                    <!-- BOTÓN DE CÓDIGO QR PARA COMPARTIR -->
                     <button onclick="mostrarQrApk()" class="bg-[#050806] border border-[#00ff66]/40 hover:border-[#00ff66] text-[#00ff66] text-xs font-bold py-2.5 px-3.5 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all matrix-glow" title="Ver Código QR">
                         <i data-lucide="qr-code" class="w-4 h-4"></i>
                         <span class="text-[10px] uppercase font-futurista hidden sm:inline">Código QR</span>
@@ -308,7 +304,6 @@
                     </div>
                 </div>
 
-                <!-- Contenedor del Botón Profesional de PayPal Integrado -->
                 <div id="paypal-button-container" class="w-full pt-2"></div>
             </div>
         </section>
@@ -714,9 +709,6 @@
             document.getElementById('carrito-monto-total').innerText = `$${subtotal.toFixed(2)}`;
         }
 
-        // ============================================================
-        // REGISTRO DE ÓRDENES EN SUPABASE (tabla ordenes_vip) - BLINDADO
-        // ============================================================
         const COLA_PENDIENTES_KEY = 'dunig_ordenes_pendientes';
 
         function leerColaPendientes() {
@@ -777,7 +769,6 @@
             }
         }
 
-        // RENDERIZADO DE PAYPAL ROBUSTO CON SOPORTE PARA MÚLTIPLES ENLACES
         function renderizarBotonPayPal() {
             const container = document.getElementById('paypal-button-container');
             if (!container) return;
@@ -941,4 +932,14 @@
             aplicarYFijarCodigoReferido();
             await detectarReferidoPorDeepLink();
             verificarClienteRegistrado();
-            iniciarCarrusel
+            iniciarCarrusel();
+            const clienteGuardado = localStorage.getItem('dunig_cliente_registrado');
+            if (clienteGuardado) {
+                await descargarCatalogoDeSupabase();
+            }
+            lucide.createIcons();
+            reintentarOrdenesPendientes();
+        });
+    </script>
+</body>
+</html>
