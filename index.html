@@ -66,20 +66,46 @@
 <body class="antialiased min-h-screen flex flex-col justify-between grid-bg relative">
 
     <!-- MODAL PARA MOSTRAR EL CÓDIGO QR -->
-    <div id="modal-qr" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[99999] hidden flex items-center justify-center p-4">
-        <div class="bg-[#0d110f] border border-[#00ff66]/40 w-full max-w-xs rounded-2xl p-6 text-center shadow-2xl space-y-4">
-            <h3 class="text-white font-bold text-base flex items-center justify-center gap-2 font-futurista">
-                <i data-lucide="qr-code" class="w-5 h-5 text-[#00ff66]"></i> CÓDIGO QR VIP
-            </h3>
-            <p class="text-xs text-gray-400">Escanea con la cámara de tu teléfono para acceder a la plataforma digital.</p>
-            
-            <div id="contenedor-qr" class="bg-white p-4 rounded-xl flex items-center justify-center mx-auto w-fit"></div>
-            
-            <button onclick="cerrarModalQr()" class="w-full btn-matrix font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider cursor-pointer">
-                Cerrar
-            </button>
-        </div>
+<div id="modal-qr" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[99999] hidden flex items-center justify-center p-4">
+    <div class="bg-[#0d110f] border border-[#00ff66]/40 w-full max-w-xs rounded-2xl p-6 text-center shadow-2xl space-y-4">
+        <h3 class="text-white font-bold text-base flex items-center justify-center gap-2 font-futurista">
+            <i data-lucide="qr-code" class="w-5 h-5 text-[#00ff66]"></i> CÓDIGO QR VIP
+        </h3>
+        <p class="text-xs text-gray-400">Escanea con la cámara de tu teléfono para descargar el APK e instalarlo.</p>
+        
+        <!-- Contenedor donde se renderizará el QR -->
+        <div id="contenedor-qr" class="bg-white p-4 rounded-xl flex items-center justify-center mx-auto w-fit"></div>
+        
+        <button onclick="cerrarModalQr()" class="w-full btn-matrix font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider cursor-pointer">
+            Cerrar
+        </button>
     </div>
+</div>
+
+<script>
+    function abrirModalQr() {
+        const modal = document.getElementById('modal-qr');
+        const contenedorQr = document.getElementById('contenedor-qr');
+        modal.classList.remove('hidden');
+        
+        // Limpiar contenido previo por si acaso
+        contenedorQr.innerHTML = '';
+        
+        // URL directa hacia tu APK en el repositorio/servidor
+        const urlApk = window.location.origin + '/download/app.apk'; 
+        
+        // Generar el código QR usando una librería como qrcode.js
+        new QRCode(contenedorQr, {
+            text: urlApk,
+            width: 150,
+            height: 150,
+        });
+    }
+
+    function cerrarModalQr() {
+        document.getElementById('modal-qr').classList.add('hidden');
+    }
+</script>
 
     <!-- MODAL DE REGISTRO / ACCESO VIP INICIAL (CON SISTEMA DE REFERIDOS) -->
     <div id="modal-registro-cliente" class="fixed inset-0 bg-black/95 z-[9999] flex items-center justify-center p-4 backdrop-blur-md">
