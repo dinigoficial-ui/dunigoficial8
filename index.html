@@ -91,10 +91,10 @@
         // Limpiar contenido previo por si acaso
         contenedorQr.innerHTML = '';
         
-        // URL directa hacia tu APK en el repositorio/servidor
-        const urlApk = window.location.origin + '/download/app.apk'; 
+        // URL directa hacia tu APK en GitHub
+        const urlApk = 'https://raw.githubusercontent.com/dinigoficial-ui/dunigoficial8/main/app-debug.apk'; 
         
-        // Generar el código QR usando una librería como qrcode.js
+        // Generar el código QR usando la librería qrcode.js
         new QRCode(contenedorQr, {
             text: urlApk,
             width: 150,
