@@ -225,8 +225,8 @@
     </div>
 
     <!-- VISTA VITRINA DE INFOPRODUCTOS -->
-    <main id="vista-vitrina" class="max-w-7xl w-full mx-auto px-4 py-6 flex-grow space-y-6 relative z-10">
-        <div class="w-full max-w-2xl mx-auto px-2">
+    <main id="vista-vitrina" class="max-w-7xl w-full mx-auto px-2 sm:px-4 py-4 flex-grow space-y-4 relative z-10">
+        <div class="w-full max-w-2xl mx-auto px-1">
             <div class="relative flex items-center bg-[#050806] border border-[#00ff66]/30 rounded-2xl p-2.5 shadow-xl focus-within:border-[#00ff66] transition-colors">
                 <div class="pl-3 pr-2 text-[#00ff66]">
                     <i data-lucide="search" class="w-5 h-5"></i>
@@ -244,9 +244,9 @@
             </div>
         </div>
 
-        <!-- CAMBIO: Estilo Marketplace de 2 columnas en móviles y hasta 4 en pantallas grandes -->
-        <div id="grid-productos-vitrina" class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-            <div class="col-span-2 lg:col-span-4 text-center text-[#00ff66]/70 py-12 font-mono text-xs">Cargando infoproductos desde la base de datos...</div>
+        <!-- GRID ESTILO MARKETPLACE: 2 columnas limpias con espacio fino entre items -->
+        <div id="grid-productos-vitrina" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+            <div class="col-span-2 sm:col-span-3 lg:col-span-4 text-center text-[#00ff66]/70 py-12 font-mono text-xs">Cargando infoproductos desde la base de datos...</div>
         </div>
     </main>
 
@@ -598,7 +598,7 @@
 
             const { data, error } = await supabaseClient.from('productos').select('*');
             if (error) {
-                grid.innerHTML = `<div class="col-span-2 lg:col-span-4 text-center text-red-400 font-mono text-xs">Error al conectar con la base de datos.</div>`;
+                grid.innerHTML = `<div class="col-span-2 sm:col-span-3 lg:col-span-4 text-center text-red-400 font-mono text-xs">Error al conectar con la base de datos.</div>`;
                 return;
             }
 
@@ -609,26 +609,24 @@
                     const titulo = p.titulo || p.nombre || "Infoproducto";
                     const precio = parseFloat(p.precio || p.valor || 0);
                     const imagen = p.imagen_url || p.imagen || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600';
-                    const categoria = p.categoria || 'INFOPRODUCTO';
 
-                    // CAMBIO: Altura controlada (h-40 sm:h-48) y object-cover para evitar deformaciones
+                    // DISEÑO MARKETPLACE REAL: Imagen 1:1 Cuadrada Perfecta + Nitidez + Texto compacto al pie
                     grid.innerHTML += `
-                        <div onclick="verDetalleDeProducto(${p.id})" class="glass-panel rounded-2xl sm:rounded-3xl overflow-hidden border border-[#00ff66]/20 flex flex-col justify-between shadow-xl cursor-pointer hover:border-[#00ff66] transition-all group">
-                            <div class="h-40 sm:h-48 bg-black overflow-hidden relative flex items-center justify-center">
-                                <img src="${imagen}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90">
-                                <span class="absolute top-2.5 left-2.5 bg-black/80 backdrop-blur-md text-[7px] sm:text-[8px] font-futurista font-bold uppercase tracking-widest text-[#00ff66] px-2.5 py-1 rounded-md border border-[#00ff66]/30">${categoria}</span>
+                        <div onclick="verDetalleDeProducto(${p.id})" class="flex flex-col cursor-pointer group rounded-lg overflow-hidden bg-[#0a0d0b] border border-[#00ff66]/15 hover:border-[#00ff66]/60 transition-all">
+                            <!-- Cuadro 1:1 Cuadrado Perfecto con Nitidez 100% -->
+                            <div class="w-full aspect-square bg-black overflow-hidden relative">
+                                <img src="${imagen}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
                             </div>
-                            <div class="p-3.5 sm:p-6 space-y-2.5">
-                                <h3 class="font-futurista font-bold text-xs sm:text-sm text-white uppercase tracking-wide truncate">${titulo}</h3>
-                                <div class="flex justify-between items-center pt-2.5 border-t border-[#1a3322]">
-                                    <span class="font-mono text-xs sm:text-sm text-matrix font-bold">$${precio.toFixed(2)}</span>
-                                    <span class="text-[9px] sm:text-[10px] font-futurista font-black uppercase text-[#00ff66] flex items-center gap-1 group-hover:translate-x-1 transition-transform">Ver →</span>
-                                </div>
+                            <!-- Información al estilo Facebook Marketplace -->
+                            <div class="p-2.5 flex flex-col justify-between flex-grow space-y-0.5">
+                                <p class="text-xs sm:text-sm text-white leading-snug truncate">
+                                    <span class="font-bold font-mono text-[#00ff66]">$${precio.toFixed(2)}</span> · <span class="font-semibold text-stone-200">${titulo}</span>
+                                </p>
                             </div>
                         </div>`;
                 });
             } else {
-                grid.innerHTML = `<div class="col-span-2 lg:col-span-4 text-center text-stone-500 font-mono text-xs">No hay infoproductos cargados en este momento.</div>`;
+                grid.innerHTML = `<div class="col-span-2 sm:col-span-3 lg:col-span-4 text-center text-stone-500 font-mono text-xs">No hay infoproductos cargados en este momento.</div>`;
             }
             lucide.createIcons();
         }
