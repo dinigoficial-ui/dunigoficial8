@@ -10,9 +10,6 @@
     
     <!-- Librería para generar códigos QR de forma automática -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    
-    <!-- SDK de PayPal Oficial -->
-    <script src="https://www.paypal.com/sdk/js?client-id=BAAJXjp6RUin5h38OTPrvUN47wf7NG9zcimQN4tMCfEvRK2EEL3-ArZlGFl5hk_j98AYJPVGHcMXjASOFQ&currency=USD&intent=capture"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Plus+Jakarta+Sans:wght@200;300;400;500;700&display=swap');
@@ -586,7 +583,7 @@
 
             if (nombre === 'carrito') {
                 renderizarCarrito();
-                renderizarBotonPayPal();
+                cargarScriptPayPalYRenderizar();
             }
             window.scrollTo({ top: 0, behavior: 'smooth' });
             setTimeout(() => lucide.createIcons(), 50);
@@ -725,7 +722,7 @@
                             <img src="${item.imagen_url}" class="w-12 h-12 object-cover rounded-xl border border-[#1a3322]">
                             <div>
                                 <h4 class="text-xs font-bold text-white font-futurista uppercase">${item.titulo}</h4>
-                                <button onclick="carrito.splice(${idx},1);renderizarCarrito();document.getElementById('contador-carrito-badge').innerText=carrito.length;renderizarBotonPayPal();" class="text-[10px] text-red-400 hover:underline cursor-pointer">Eliminar</button>
+                                <button onclick="carrito.splice(${idx},1);renderizarCarrito();document.getElementById('contador-carrito-badge').innerText=carrito.length;cargarScriptPayPalYRenderizar();" class="text-[10px] text-red-400 hover:underline cursor-pointer">Eliminar</button>
                             </div>
                         </div>
                         <span class="font-mono text-matrix font-bold">$${item.precio.toFixed(2)}</span>
@@ -795,21 +792,60 @@
             }
         }
 
-        function renderizarBotonPayPal() {
+        async function cargarScriptPayPalYRenderizar() {
             const container = document.getElementById('paypal-button-container');
             if (!container) return;
-            container.innerHTML = ""; 
-
+            
             let subtotalProductos = carrito.reduce((a, b) => a + b.precio, 0);
             if (subtotalProductos <= 0) {
                 container.innerHTML = `<p class="text-[11px] text-stone-500 text-center py-2 font-mono">Agrega un infoproducto para habilitar el pago.</p>`;
                 return;
             }
 
-            if (typeof paypal === 'undefined' || !paypal.Buttons) {
-                container.innerHTML = `<div class="p-3 bg-red-950/40 border border-red-500/30 rounded-xl text-center text-xs text-red-300 font-mono">El SDK de PayPal no cargó. Verifica tu conexión o bloqueador de anuncios.</div>`;
-                return;
+            container.innerHTML = `<p class="text-[11px] text-[#00ff66] text-center py-2 font-mono">Conectando con pasarela segura...</p>`;
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('ajustes_sistema')
+                    .select('valor')
+                    .eq('id', 'paypal_client_id')
+                    .single();
+
+                if (error || !data || !data.valor) {
+                    container.innerHTML = `<div class="p-3 bg-red-950/40 border border-red-500/30 rounded-xl text-center text-xs text-red-300 font-mono">No se encontró el Client ID de PayPal en la base de datos.</div>`;
+                    return;
+                }
+
+                const clientIdReal = data.valor.trim();
+
+                if (typeof paypal !== 'undefined' && paypal.Buttons) {
+                    renderizarBotonPayPalConSDK();
+                    return;
+                }
+
+                const script = document.createElement('script');
+                script.src = `https://www.paypal.com/sdk/js?client-id=${clientIdReal}&currency=USD&intent=capture`;
+                script.onload = function() {
+                    renderizarBotonPayPalConSDK();
+                };
+                script.onerror = function() {
+                    container.innerHTML = `<div class="p-3 bg-red-950/40 border border-red-500/30 rounded-xl text-center text-xs text-red-300 font-mono">Error al cargar el SDK de PayPal. Verifica tu Client ID.</div>`;
+                };
+                document.head.appendChild(script);
+
+            } catch (err) {
+                console.error("Error cargando PayPal dinámicamente:", err);
+                container.innerHTML = `<div class="p-3 bg-red-950/40 border border-red-500/30 rounded-xl text-center text-xs text-red-300 font-mono">Error de conexión al cargar pasarela.</div>`;
             }
+        }
+
+        function renderizarBotonPayPalConSDK() {
+            const container = document.getElementById('paypal-button-container');
+            if (!container) return;
+            container.innerHTML = ""; 
+
+            let subtotalProductos = carrito.reduce((a, b) => a + b.precio, 0);
+            if (subtotalProductos <= 0) return;
 
             try {
                 paypal.Buttons({
@@ -904,68 +940,3 @@
                                 nombreCliente: clienteLocal.nombre,
                                 productos: listaNombresProductos,
                                 referencia: idTransaccion
-                            });
-
-                            alert(`¡Pago completado con éxito! Tus infoproductos han sido enviados a: ${clienteLocal.correo}\nReferencia: ${idTransaccion}`);
-                        } else {
-                            const cola = leerColaPendientes();
-                            cola.push(datosOrden);
-                            guardarColaPendientes(cola);
-                            alert(`Pago exitoso en PayPal (Ref: ${idTransaccion}), pero hubo un problema interno al registrar la orden en la base de datos. Se reintentará automáticamente.`);
-                        }
-
-                        window.cambiarPantalla('vitrina');
-                    },
-
-                    onCancel: function() {
-                        console.log("El cliente canceló el pago en PayPal.");
-                    },
-
-                    onError: function(err) {
-                        console.error("Error de PayPal:", err);
-                        alert("Ocurrió un error con PayPal. Si se te cobró, contáctanos con tu comprobante de pago.");
-                    }
-                }).render('#paypal-button-container');
-            } catch (e) {
-                console.error("Error al renderizar botones de PayPal:", e);
-            }
-        }
-
-        window.mostrarQrApk = function() {
-            const urlApp = 'https://raw.githubusercontent.com/dinigoficial-ui/dunigoficial8/main/app-debug.apk';
-            const modal = document.getElementById('modal-qr');
-            const contenedor = document.getElementById('contenedor-qr');
-            
-            contenedor.innerHTML = "";
-            
-            new QRCode(contenedor, {
-                text: urlApp,
-                width: 170,
-                height: 170,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-            });
-            
-            modal.classList.remove('hidden');
-        }
-
-        window.cerrarModalQr = function() {
-            document.getElementById('modal-qr').classList.add('hidden');
-        }
-
-        window.addEventListener('DOMContentLoaded', async () => {
-            aplicarYFijarCodigoReferido();
-            await detectarReferidoPorDeepLink();
-            verificarClienteRegistrado();
-            iniciarCarrusel();
-            const clienteGuardado = localStorage.getItem('dunig_cliente_registrado');
-            if (clienteGuardado) {
-                await descargarCatalogoDeSupabase();
-            }
-            lucide.createIcons();
-            reintentarOrdenesPendientes();
-        });
-    </script>
-</body>
-</html>
