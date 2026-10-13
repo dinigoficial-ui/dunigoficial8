@@ -932,7 +932,8 @@
         }
 
         window.mostrarQrApk = function() {
-            const urlApp = window.location.href;
+            // CORREGIDO: Se apunta directamente al archivo raw del APK en GitHub
+            const urlApp = 'https://raw.githubusercontent.com/dinigoficial-ui/dunigoficial8/main/app-debug.apk';
             const modal = document.getElementById('modal-qr');
             const contenedor = document.getElementById('contenedor-qr');
             
