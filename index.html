@@ -694,7 +694,8 @@
     if(carrito.length === 0) {
         cont.innerHTML = `<div class="p-8 text-center text-stone-500 font-mono text-xs">Tu bolsa está vacía.</div>`;
         document.getElementById('carrito-monto-total').innerText = "$0.00";
-        cargarScriptPayPalYRenderizar(); // <--- Llamada añadida aquí para limpiar los botones de pago
+        document.getElementById('contador-carrito-badge').innerText = "0";
+        cargarScriptPayPalYRenderizar();
         return;
     }
 
@@ -706,7 +707,7 @@
                     <img src="${item.imagen_url}" class="w-12 h-12 object-cover rounded-xl border border-[#1a3322]">
                     <div>
                         <h4 class="text-xs font-bold text-white font-futurista uppercase">${item.titulo}</h4>
-                        <button onclick="carrito.splice(${idx},1);renderizarCarrito();document.getElementById('contador-carrito-badge').innerText=carrito.length;cargarScriptPayPalYRenderizar();" class="text-[10px] text-red-400 hover:underline cursor-pointer">Eliminar</button>
+                        <button type="button" class="btn-eliminar-item text-[10px] text-red-400 hover:underline cursor-pointer" data-index="${idx}">Eliminar</button>
                     </div>
                 </div>
                 <span class="font-mono text-matrix font-bold">$${item.precio.toFixed(2)}</span>
@@ -714,7 +715,19 @@
     });
 
     document.getElementById('carrito-monto-total').innerText = `$${subtotal.toFixed(2)}`;
-    cargarScriptPayPalYRenderizar(); // <--- Actualiza los botones al renderizar elementos
+    document.getElementById('contador-carrito-badge').innerText = carrito.length;
+    cargarScriptPayPalYRenderizar();
+
+    // Asignar eventos de forma segura a cada botón de eliminar generado
+    setTimeout(() => {
+        document.querySelectorAll('.btn-eliminar-item').forEach(btn => {
+            btn.onclick = function() {
+                const index = parseInt(this.getAttribute('data-index'));
+                carrito.splice(index, 1);
+                renderizarCarrito();
+            };
+        });
+    }, 50);
 }
 
         function guardarColaPendientes(cola) {
