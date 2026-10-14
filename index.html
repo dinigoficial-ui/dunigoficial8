@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-    <title>DUNIGINFO - Ecosistema de Infoproductos VIP (Matrix Edition)</title>
+    <title>DUNIGINFO - Ecosistema de Infoproductos VIP (Duniginfo Edition)</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -111,7 +111,7 @@
                 <div class="w-14 h-14 bg-[#00ff66]/10 border border-[#00ff66]/30 rounded-2xl flex items-center justify-center mx-auto text-[#00ff66] floating-badge">
                     <i data-lucide="shield-check" class="w-7 h-7"></i>
                 </div>
-                <h2 class="text-xl font-black font-futurista text-white uppercase tracking-wider">ACCESO VIP <span class="text-matrix">MATRIX</span></h2>
+                <h2 class="text-xl font-black font-futurista text-white uppercase tracking-wider">ACCESO VIP <span class="text-matrix">DUNIGINFO</span></h2>
                 <p class="text-xs text-gray-400">Identifícate para desbloquear la descarga instantánea de tus infoproductos digitales.</p>
             </div>
 
@@ -342,7 +342,7 @@
     </div>
 
     <footer class="border-t border-[#00ff66]/20 bg-black/80 p-6 text-center text-[10px] text-stone-500 font-mono tracking-widest mt-16">
-        © 2026 DUNIGINFO MATRIX ECOSISTEMA. TODOS LOS DERECHOS RESERVADOS.
+        © 2026 DUNIGINFO ECOSISTEMA. TODOS LOS DERECHOS RESERVADOS.
     </footer>
 
     <script type="module">
@@ -684,43 +684,38 @@
         }
 
         function renderizarCarrito() {
-            const cont = document.getElementById('lista-items-carrito');
-            const contAbajo = document.getElementById('cantidad-items-abajo');
-            if(!cont) return;
-            cont.innerHTML = "";
-            let subtotal = 0;
-            if(contAbajo) contAbajo.innerText = carrito.length;
+    const cont = document.getElementById('lista-items-carrito');
+    const contAbajo = document.getElementById('cantidad-items-abajo');
+    if(!cont) return;
+    cont.innerHTML = "";
+    let subtotal = 0;
+    if(contAbajo) contAbajo.innerText = carrito.length;
 
-            if(carrito.length === 0) {
-                cont.innerHTML = `<div class="p-8 text-center text-stone-500 font-mono text-xs">Tu bolsa está vacía.</div>`;
-                document.getElementById('carrito-monto-total').innerText = "$0.00";
-                return;
-            }
+    if(carrito.length === 0) {
+        cont.innerHTML = `<div class="p-8 text-center text-stone-500 font-mono text-xs">Tu bolsa está vacía.</div>`;
+        document.getElementById('carrito-monto-total').innerText = "$0.00";
+        cargarScriptPayPalYRenderizar(); // <--- Llamada añadida aquí para limpiar los botones de pago
+        return;
+    }
 
-            carrito.forEach((item, idx) => {
-                subtotal += item.precio;
-                cont.innerHTML += `
-                    <div class="flex justify-between items-center py-4 first:pt-2 last:pb-2">
-                        <div class="flex items-center gap-3">
-                            <img src="${item.imagen_url}" class="w-12 h-12 object-cover rounded-xl border border-[#1a3322]">
-                            <div>
-                                <h4 class="text-xs font-bold text-white font-futurista uppercase">${item.titulo}</h4>
-                                <button onclick="carrito.splice(${idx},1);renderizarCarrito();document.getElementById('contador-carrito-badge').innerText=carrito.length;cargarScriptPayPalYRenderizar();" class="text-[10px] text-red-400 hover:underline cursor-pointer">Eliminar</button>
-                            </div>
-                        </div>
-                        <span class="font-mono text-matrix font-bold">$${item.precio.toFixed(2)}</span>
-                    </div>`;
-            });
+    carrito.forEach((item, idx) => {
+        subtotal += item.precio;
+        cont.innerHTML += `
+            <div class="flex justify-between items-center py-4 first:pt-2 last:pb-2">
+                <div class="flex items-center gap-3">
+                    <img src="${item.imagen_url}" class="w-12 h-12 object-cover rounded-xl border border-[#1a3322]">
+                    <div>
+                        <h4 class="text-xs font-bold text-white font-futurista uppercase">${item.titulo}</h4>
+                        <button onclick="carrito.splice(${idx},1);renderizarCarrito();document.getElementById('contador-carrito-badge').innerText=carrito.length;cargarScriptPayPalYRenderizar();" class="text-[10px] text-red-400 hover:underline cursor-pointer">Eliminar</button>
+                    </div>
+                </div>
+                <span class="font-mono text-matrix font-bold">$${item.precio.toFixed(2)}</span>
+            </div>`;
+    });
 
-            document.getElementById('carrito-monto-total').innerText = `$${subtotal.toFixed(2)}`;
-        }
-
-        const COLA_PENDIENTES_KEY = 'dunig_ordenes_pendientes';
-
-        function leerColaPendientes() {
-            try { return JSON.parse(localStorage.getItem(COLA_PENDIENTES_KEY) || '[]'); }
-            catch (e) { return []; }
-        }
+    document.getElementById('carrito-monto-total').innerText = `$${subtotal.toFixed(2)}`;
+    cargarScriptPayPalYRenderizar(); // <--- Actualiza los botones al renderizar elementos
+}
 
         function guardarColaPendientes(cola) {
             try { localStorage.setItem(COLA_PENDIENTES_KEY, JSON.stringify(cola)); }
