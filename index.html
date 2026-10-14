@@ -47,35 +47,38 @@
         }
         .floating-badge { animation: floatSlow 4s ease-in-out infinite; }
         
-        /* Animación y diseño para la esfera del planeta girando */
-        @keyframes rotatePlanet {
-            0% { background-position: 0 0; }
-            100% { background-position: 50px 0; }
+        /* Animación de rotación continua del Mapamundi */
+        @keyframes rotateWorldMap {
+            0% { background-position-x: 0px; }
+            100% { background-position-x: 200px; }
         }
+
         @keyframes pulseGlowBlue {
-            0%, 100% { box-shadow: 0 0 15px rgba(0, 140, 255, 0.6), inset 0 0 10px rgba(0, 255, 100, 0.4); }
-            50% { box-shadow: 0 0 25px rgba(0, 180, 255, 0.9), inset 0 0 15px rgba(0, 255, 100, 0.7); }
+            0%, 100% { box-shadow: 0 0 15px rgba(0, 140, 255, 0.8), inset -4px -4px 8px rgba(0,0,0,0.7); }
+            50% { box-shadow: 0 0 25px rgba(0, 180, 255, 1), inset -4px -4px 8px rgba(0,0,0,0.7); }
         }
+
+        /* Esfera Planeta 3D con Mapamundi Real Giratorio */
         .planeta-esfera {
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
-            background: radial-gradient(circle at 30% 30%, #4da6ff, #004080 70%, #001a33 100%);
-            box-shadow: 0 0 18px rgba(0, 140, 255, 0.8), inset -4px -4px 8px rgba(0,0,0,0.6);
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Blue_Marble_2002.png/600px-Blue_Marble_2002.png');
+            background-size: 200px 36px;
+            background-repeat: repeat-x;
             position: relative;
             overflow: hidden;
-            animation: pulseGlowBlue 3s infinite ease-in-out;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            animation: rotateWorldMap 8s linear infinite, pulseGlowBlue 3s ease-in-out infinite;
         }
-        .planeta-esfera::before {
+
+        /* Capa de iluminación esférica y sombra 3D sobre los continentes */
+        .planeta-esfera::after {
             content: '';
             position: absolute;
             inset: 0;
-            background: radial-gradient(ellipse at 60% 40%, rgba(0, 230, 115, 0.8) 0%, rgba(0, 150, 75, 0.5) 40%, transparent 70%);
-            mix-blend-mode: screen;
-            animation: rotatePlanet 6s linear infinite;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4) 0%, rgba(0,140,255,0.2) 40%, rgba(0,0,0,0.85) 100%);
+            pointer-events: none;
         }
 
         ::-webkit-scrollbar { width: 4px; }
@@ -117,13 +120,9 @@
         const contenedorQr = document.getElementById('contenedor-qr');
         modal.classList.remove('hidden');
         
-        // Limpiar contenido previo por si acaso
         contenedorQr.innerHTML = '';
-        
-        // URL directa hacia tu APK en GitHub
         const urlApk = 'https://raw.githubusercontent.com/dinigoficial-ui/dunigoficial8/main/app-debug.apk'; 
         
-        // Generar el código QR usando la librería qrcode.js con color rojo
         new QRCode(contenedorQr, {
             text: urlApk,
             width: 150,
@@ -183,7 +182,7 @@
         <header class="bg-black/90 backdrop-blur-xl px-4">
             <div class="max-w-7xl mx-auto h-20 flex items-center justify-between">
                 <div class="flex items-center gap-3 cursor-pointer" onclick="cambiarPantalla('vitrina')">
-                    <!-- Esfera del planeta girando con luz azul y continentes verdes -->
+                    <!-- Esfera del planeta 3D con mapamundi real y rotación -->
                     <div class="planeta-esfera shadow-lg"></div>
                     <div>
                         <h1 class="text-lg font-black tracking-widest text-white font-futurista">
@@ -275,7 +274,7 @@
             </div>
         </div>
 
-        <!-- GRID ESTILO MARKETPLACE: 2 columnas limpias con espacio fino entre items -->
+        <!-- GRID ESTILO MARKETPLACE -->
         <div id="grid-productos-vitrina" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
             <div class="col-span-2 sm:col-span-3 lg:col-span-4 text-center text-[#00ff66]/70 py-12 font-mono text-xs">Cargando infoproductos desde la base de datos...</div>
         </div>
@@ -535,14 +534,12 @@
             const datosCliente = { nombre, whatsapp, correo, codigo_referido: codigoReferido || 'NINGUNO' };
             localStorage.setItem('dunig_cliente_registrado', JSON.stringify(datosCliente));
 
-            // Ocultar modal de registro
             const modal = document.getElementById('modal-registro-cliente');
             if (modal) {
                 modal.style.display = 'none';
                 modal.classList.add('hidden');
             }
 
-            // Descargar catálogo y mostrar vitrina
             await descargarCatalogoDeSupabase();
             window.cambiarPantalla('vitrina');
         }
@@ -624,14 +621,11 @@
                     const precio = parseFloat(p.precio || p.valor || 0);
                     const imagen = p.imagen_url || p.imagen || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600';
 
-                    // DISEÑO MARKETPLACE REAL: Imagen 1:1 Cuadrada Perfecta + Nitidez + Texto compacto al pie
                     grid.innerHTML += `
                         <div onclick="verDetalleDeProducto(${p.id})" class="flex flex-col cursor-pointer group rounded-lg overflow-hidden bg-[#0a0d0b] border border-[#00ff66]/15 hover:border-[#00ff66]/60 transition-all">
-                            <!-- Cuadro 1:1 Cuadrado Perfecto con Nitidez 100% -->
                             <div class="w-full aspect-square bg-black overflow-hidden relative">
                                 <img src="${imagen}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
                             </div>
-                            <!-- Información al estilo Facebook Marketplace -->
                             <div class="p-2.5 flex flex-col justify-between flex-grow space-y-0.5">
                                 <p class="text-xs sm:text-sm text-white leading-snug truncate">
                                     <span class="font-bold font-mono text-[#00ff66]">$${precio.toFixed(2)}</span> · <span class="font-semibold text-stone-200">${titulo}</span>
@@ -1024,15 +1018,4 @@
         window.addEventListener('DOMContentLoaded', async () => {
             aplicarYFijarCodigoReferido();
             await detectarReferidoPorDeepLink();
-            verificarClienteRegistrado();
-            iniciarCarrusel();
-            const clienteGuardado = localStorage.getItem('dunig_cliente_registrado');
-            if (clienteGuardado) {
-                await descargarCatalogoDeSupabase();
-            }
-            lucide.createIcons();
-            reintentarOrdenesPendientes();
-        });
-    </script>
-</body>
-</html>
+            verificarClienteRegistrado
