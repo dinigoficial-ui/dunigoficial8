@@ -46,6 +46,38 @@
             50% { transform: translateY(-6px); }
         }
         .floating-badge { animation: floatSlow 4s ease-in-out infinite; }
+        
+        /* Animación y diseño para la esfera del planeta girando */
+        @keyframes rotatePlanet {
+            0% { background-position: 0 0; }
+            100% { background-position: 50px 0; }
+        }
+        @keyframes pulseGlowBlue {
+            0%, 100% { box-shadow: 0 0 15px rgba(0, 140, 255, 0.6), inset 0 0 10px rgba(0, 255, 100, 0.4); }
+            50% { box-shadow: 0 0 25px rgba(0, 180, 255, 0.9), inset 0 0 15px rgba(0, 255, 100, 0.7); }
+        }
+        .planeta-esfera {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #4da6ff, #004080 70%, #001a33 100%);
+            box-shadow: 0 0 18px rgba(0, 140, 255, 0.8), inset -4px -4px 8px rgba(0,0,0,0.6);
+            position: relative;
+            overflow: hidden;
+            animation: pulseGlowBlue 3s infinite ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .planeta-esfera::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 60% 40%, rgba(0, 230, 115, 0.8) 0%, rgba(0, 150, 75, 0.5) 40%, transparent 70%);
+            mix-blend-mode: screen;
+            animation: rotatePlanet 6s linear infinite;
+        }
+
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: #00ff66; border-radius: 10px; }
 
@@ -62,18 +94,18 @@
 </head>
 <body class="antialiased min-h-screen flex flex-col justify-between grid-bg relative">
 
-    <!-- MODAL PARA MOSTRAR EL CÓDIGO QR -->
+    <!-- MODAL PARA MOSTRAR EL CÓDIGO QR (ROJO) -->
 <div id="modal-qr" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[99999] hidden flex items-center justify-center p-4">
-    <div class="bg-[#0d110f] border border-[#00ff66]/40 w-full max-w-xs rounded-2xl p-6 text-center shadow-2xl space-y-4">
+    <div class="bg-[#0d110f] border border-red-500/40 w-full max-w-xs rounded-2xl p-6 text-center shadow-2xl space-y-4">
         <h3 class="text-white font-bold text-base flex items-center justify-center gap-2 font-futurista">
-            <i data-lucide="qr-code" class="w-5 h-5 text-[#00ff66]"></i> CÓDIGO QR VIP
+            <i data-lucide="qr-code" class="w-5 h-5 text-red-500"></i> CÓDIGO QR VIP
         </h3>
         <p class="text-xs text-gray-400">Escanea con la cámara de tu teléfono para descargar el APK e instalarlo.</p>
         
         <!-- Contenedor donde se renderizará el QR -->
         <div id="contenedor-qr" class="bg-white p-4 rounded-xl flex items-center justify-center mx-auto w-fit"></div>
         
-        <button onclick="cerrarModalQr()" class="w-full btn-matrix font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider cursor-pointer">
+        <button onclick="cerrarModalQr()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider cursor-pointer shadow-lg shadow-red-600/30 transition-all">
             Cerrar
         </button>
     </div>
@@ -91,11 +123,14 @@
         // URL directa hacia tu APK en GitHub
         const urlApk = 'https://raw.githubusercontent.com/dinigoficial-ui/dunigoficial8/main/app-debug.apk'; 
         
-        // Generar el código QR usando la librería qrcode.js
+        // Generar el código QR usando la librería qrcode.js con color rojo
         new QRCode(contenedorQr, {
             text: urlApk,
             width: 150,
             height: 150,
+            colorDark: "#cc0000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
         });
     }
 
@@ -148,9 +183,8 @@
         <header class="bg-black/90 backdrop-blur-xl px-4">
             <div class="max-w-7xl mx-auto h-20 flex items-center justify-between">
                 <div class="flex items-center gap-3 cursor-pointer" onclick="cambiarPantalla('vitrina')">
-                    <div class="border border-[#00ff66]/40 p-2.5 rounded-2xl bg-[#050806] matrix-glow">
-                        <i data-lucide="terminal" class="w-6 h-6 text-[#00ff66] animate-pulse"></i>
-                    </div>
+                    <!-- Esfera del planeta girando con luz azul y continentes verdes -->
+                    <div class="planeta-esfera shadow-lg"></div>
                     <div>
                         <h1 class="text-lg font-black tracking-widest text-white font-futurista">
                            DUNIG<span class="text-matrix">INFO</span>
@@ -168,8 +202,8 @@
                     </div>
 
                     <button onclick="mostrarQrApk()" class="bg-[#050806] border border-[#00ff66]/40 hover:border-[#00ff66] text-[#00ff66] text-xs font-bold py-2.5 px-3.5 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all matrix-glow" title="Ver Código QR">
-                        <i data-lucide="qr-code" class="w-4 h-4"></i>
-                        <span class="text-[10px] uppercase font-futurista hidden sm:inline">Código QR</span>
+                        <i data-lucide="qr-code" class="w-4 h-4 text-red-500"></i>
+                        <span class="text-[10px] uppercase font-futurista hidden sm:inline text-red-400">Código QR</span>
                     </button>
 
                     <button onclick="cambiarPantalla('carrito')" class="bg-[#050806] border border-[#00ff66]/40 hover:border-[#00ff66] px-4 py-2.5 rounded-xl flex items-center gap-2.5 cursor-pointer transition-all matrix-glow">
@@ -684,51 +718,57 @@
         }
 
         function renderizarCarrito() {
-    const cont = document.getElementById('lista-items-carrito');
-    const contAbajo = document.getElementById('cantidad-items-abajo');
-    if(!cont) return;
-    cont.innerHTML = "";
-    let subtotal = 0;
-    if(contAbajo) contAbajo.innerText = carrito.length;
+            const cont = document.getElementById('lista-items-carrito');
+            const contAbajo = document.getElementById('cantidad-items-abajo');
+            if(!cont) return;
+            cont.innerHTML = "";
+            let subtotal = 0;
+            if(contAbajo) contAbajo.innerText = carrito.length;
 
-    if(carrito.length === 0) {
-        cont.innerHTML = `<div class="p-8 text-center text-stone-500 font-mono text-xs">Tu bolsa está vacía.</div>`;
-        document.getElementById('carrito-monto-total').innerText = "$0.00";
-        document.getElementById('contador-carrito-badge').innerText = "0";
-        cargarScriptPayPalYRenderizar();
-        return;
-    }
+            if(carrito.length === 0) {
+                cont.innerHTML = `<div class="p-8 text-center text-stone-500 font-mono text-xs">Tu bolsa está vacía.</div>`;
+                document.getElementById('carrito-monto-total').innerText = "$0.00";
+                document.getElementById('contador-carrito-badge').innerText = "0";
+                cargarScriptPayPalYRenderizar();
+                return;
+            }
 
-    carrito.forEach((item, idx) => {
-        subtotal += item.precio;
-        cont.innerHTML += `
-            <div class="flex justify-between items-center py-4 first:pt-2 last:pb-2">
-                <div class="flex items-center gap-3">
-                    <img src="${item.imagen_url}" class="w-12 h-12 object-cover rounded-xl border border-[#1a3322]">
-                    <div>
-                        <h4 class="text-xs font-bold text-white font-futurista uppercase">${item.titulo}</h4>
-                        <button type="button" class="btn-eliminar-item text-[10px] text-red-400 hover:underline cursor-pointer" data-index="${idx}">Eliminar</button>
-                    </div>
-                </div>
-                <span class="font-mono text-matrix font-bold">$${item.precio.toFixed(2)}</span>
-            </div>`;
-    });
+            carrito.forEach((item, idx) => {
+                subtotal += item.precio;
+                cont.innerHTML += `
+                    <div class="flex justify-between items-center py-4 first:pt-2 last:pb-2">
+                        <div class="flex items-center gap-3">
+                            <img src="${item.imagen_url}" class="w-12 h-12 object-cover rounded-xl border border-[#1a3322]">
+                            <div>
+                                <h4 class="text-xs font-bold text-white font-futurista uppercase">${item.titulo}</h4>
+                                <button type="button" class="btn-eliminar-item text-[10px] text-red-400 hover:underline cursor-pointer" data-index="${idx}">Eliminar</button>
+                            </div>
+                        </div>
+                        <span class="font-mono text-matrix font-bold">$${item.precio.toFixed(2)}</span>
+                    </div>`;
+            });
 
-    document.getElementById('carrito-monto-total').innerText = `$${subtotal.toFixed(2)}`;
-    document.getElementById('contador-carrito-badge').innerText = carrito.length;
-    cargarScriptPayPalYRenderizar();
+            document.getElementById('carrito-monto-total').innerText = `$${subtotal.toFixed(2)}`;
+            document.getElementById('contador-carrito-badge').innerText = carrito.length;
+            cargarScriptPayPalYRenderizar();
 
-    // Asignar eventos de forma segura a cada botón de eliminar generado
-    setTimeout(() => {
-        document.querySelectorAll('.btn-eliminar-item').forEach(btn => {
-            btn.onclick = function() {
-                const index = parseInt(this.getAttribute('data-index'));
-                carrito.splice(index, 1);
-                renderizarCarrito();
-            };
-        });
-    }, 50);
-}
+            setTimeout(() => {
+                document.querySelectorAll('.btn-eliminar-item').forEach(btn => {
+                    btn.onclick = function() {
+                        const index = parseInt(this.getAttribute('data-index'));
+                        carrito.splice(index, 1);
+                        renderizarCarrito();
+                    };
+                });
+            }, 50);
+        }
+
+        const COLA_PENDIENTES_KEY = 'dunig_ordenes_pendientes';
+
+        function leerColaPendientes() {
+            try { return JSON.parse(localStorage.getItem(COLA_PENDIENTES_KEY) || '[]'); }
+            catch (e) { return []; }
+        }
 
         function guardarColaPendientes(cola) {
             try { localStorage.setItem(COLA_PENDIENTES_KEY, JSON.stringify(cola)); }
@@ -969,7 +1009,7 @@
                 text: urlApp,
                 width: 170,
                 height: 170,
-                colorDark: "#000000",
+                colorDark: "#cc0000",
                 colorLight: "#ffffff",
                 correctLevel: QRCode.CorrectLevel.H
             });
