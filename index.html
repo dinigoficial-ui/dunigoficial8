@@ -47,7 +47,6 @@
         }
         .floating-badge { animation: floatSlow 4s ease-in-out infinite; }
         
-        /* Animación de rotación continua del Mapamundi */
         @keyframes rotateWorldMap {
             0% { background-position-x: 0px; }
             100% { background-position-x: 200px; }
@@ -58,7 +57,6 @@
             50% { box-shadow: 0 0 25px rgba(0, 180, 255, 1), inset -4px -4px 8px rgba(0,0,0,0.7); }
         }
 
-        /* Esfera Planeta 3D con Mapamundi Real Giratorio */
         .planeta-esfera {
             width: 36px;
             height: 36px;
@@ -71,7 +69,6 @@
             animation: rotateWorldMap 8s linear infinite, pulseGlowBlue 3s ease-in-out infinite;
         }
 
-        /* Capa de iluminación esférica y sombra 3D sobre los continentes */
         .planeta-esfera::after {
             content: '';
             position: absolute;
@@ -97,48 +94,40 @@
 </head>
 <body class="antialiased min-h-screen flex flex-col justify-between grid-bg relative">
 
-    <!-- MODAL PARA MOSTRAR EL CÓDIGO QR (ROJO) -->
-<div id="modal-qr" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[99999] hidden flex items-center justify-center p-4">
-    <div class="bg-[#0d110f] border border-red-500/40 w-full max-w-xs rounded-2xl p-6 text-center shadow-2xl space-y-4">
-        <h3 class="text-white font-bold text-base flex items-center justify-center gap-2 font-futurista">
-            <i data-lucide="qr-code" class="w-5 h-5 text-red-500"></i> CÓDIGO QR VIP
-        </h3>
-        <p class="text-xs text-gray-400">Escanea con la cámara de tu teléfono para descargar el APK e instalarlo.</p>
-        
-        <!-- Contenedor donde se renderizará el QR -->
-        <div id="contenedor-qr" class="bg-white p-4 rounded-xl flex items-center justify-center mx-auto w-fit"></div>
-        
-        <button onclick="cerrarModalQr()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider cursor-pointer shadow-lg shadow-red-600/30 transition-all">
-            Cerrar
-        </button>
+    <div id="modal-qr" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[99999] hidden flex items-center justify-center p-4">
+        <div class="bg-[#0d110f] border border-red-500/40 w-full max-w-xs rounded-2xl p-6 text-center shadow-2xl space-y-4">
+            <h3 class="text-white font-bold text-base flex items-center justify-center gap-2 font-futurista">
+                <i data-lucide="qr-code" class="w-5 h-5 text-red-500"></i> CÓDIGO QR VIP
+            </h3>
+            <p class="text-xs text-gray-400">Escanea con la cámara de tu teléfono para descargar el APK e instalarlo.</p>
+            <div id="contenedor-qr" class="bg-white p-4 rounded-xl flex items-center justify-center mx-auto w-fit"></div>
+            <button onclick="cerrarModalQr()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider cursor-pointer shadow-lg shadow-red-600/30 transition-all">
+                Cerrar
+            </button>
+        </div>
     </div>
-</div>
 
-<script>
-    function abrirModalQr() {
-        const modal = document.getElementById('modal-qr');
-        const contenedorQr = document.getElementById('contenedor-qr');
-        modal.classList.remove('hidden');
-        
-        contenedorQr.innerHTML = '';
-        const urlApk = 'https://raw.githubusercontent.com/dinigoficial-ui/dunigoficial8/main/app-debug.apk'; 
-        
-        new QRCode(contenedorQr, {
-            text: urlApk,
-            width: 150,
-            height: 150,
-            colorDark: "#cc0000",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.H
-        });
-    }
+    <script>
+        function abrirModalQr() {
+            const modal = document.getElementById('modal-qr');
+            const contenedorQr = document.getElementById('contenedor-qr');
+            modal.classList.remove('hidden');
+            contenedorQr.innerHTML = '';
+            const urlApk = 'https://raw.githubusercontent.com/dinigoficial-ui/dunigoficial8/main/app-debug.apk'; 
+            new QRCode(contenedorQr, {
+                text: urlApk,
+                width: 150,
+                height: 150,
+                colorDark: "#cc0000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+        function cerrarModalQr() {
+            document.getElementById('modal-qr').classList.add('hidden');
+        }
+    </script>
 
-    function cerrarModalQr() {
-        document.getElementById('modal-qr').classList.add('hidden');
-    }
-</script>
-
-    <!-- MODAL DE REGISTRO / ACCESO VIP INICIAL (CON SISTEMA DE REFERIDOS) -->
     <div id="modal-registro-cliente" class="fixed inset-0 bg-black/95 z-[9999] flex items-center justify-center p-4 backdrop-blur-md">
         <div class="glass-panel w-full max-w-md p-8 rounded-3xl shadow-2xl space-y-6 relative border border-[#00ff66]/40">
             <div class="text-center space-y-2">
@@ -162,14 +151,12 @@
                     <label class="text-[10px] font-futurista uppercase text-[#00ff66] font-bold">Correo Electrónico (Para Entrega)</label>
                     <input type="email" id="reg-correo" required placeholder="tucorreo@dominio.com" class="w-full bg-[#050806] border border-[#1a3322] text-xs text-white p-3.5 rounded-xl focus:outline-none focus:border-[#00ff66] font-mono">
                 </div>
-
                 <div class="space-y-1">
                     <label class="text-[10px] font-futurista uppercase text-[#00ff66] font-bold flex items-center gap-1">
                         <i data-lucide="gift" class="w-3.5 h-3.5"></i> Código de Referido (Editable)
                     </label>
                     <input type="text" id="input-referido" placeholder="Ej. REF-123456 o NINGUNO" class="w-full bg-[#050806] border border-[#1a3322] text-xs text-[#00ff66] p-3.5 rounded-xl font-mono focus:outline-none focus:border-[#00ff66]">
                 </div>
-
                 <button type="submit" class="w-full btn-matrix font-futurista font-black py-4 rounded-xl text-xs uppercase tracking-widest cursor-pointer shadow-xl transition-all">
                     DESBLOQUEAR VITRINA VIP ⚡
                 </button>
@@ -177,12 +164,10 @@
         </div>
     </div>
 
-    <!-- CONTENEDOR FIJO AL ESCROLEAR (HEADER + CARRUSEL / PORTADA) -->
     <div class="sticky top-0 z-50 bg-[#000000] shadow-md border-b border-[#00ff66]/20">
         <header class="bg-black/90 backdrop-blur-xl px-4">
             <div class="max-w-7xl mx-auto h-20 flex items-center justify-between">
                 <div class="flex items-center gap-3 cursor-pointer" onclick="cambiarPantalla('vitrina')">
-                    <!-- Esfera del planeta 3D con mapamundi real y rotación -->
                     <div class="planeta-esfera shadow-lg"></div>
                     <div>
                         <h1 class="text-lg font-black tracking-widest text-white font-futurista">
@@ -200,7 +185,7 @@
                         <span class="text-[#00ff66] uppercase tracking-widest">SISTEMA ACTIVO 24/7</span>
                     </div>
 
-                    <button onclick="mostrarQrApk()" class="bg-[#050806] border border-[#00ff66]/40 hover:border-[#00ff66] text-[#00ff66] text-xs font-bold py-2.5 px-3.5 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all matrix-glow" title="Ver Código QR">
+                    <button onclick="abrirModalQr()" class="bg-[#050806] border border-[#00ff66]/40 hover:border-[#00ff66] text-[#00ff66] text-xs font-bold py-2.5 px-3.5 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all matrix-glow" title="Ver Código QR">
                         <i data-lucide="qr-code" class="w-4 h-4 text-red-500"></i>
                         <span class="text-[10px] uppercase font-futurista hidden sm:inline text-red-400">Código QR</span>
                     </button>
@@ -214,7 +199,6 @@
             </div>
         </header>
 
-        <!-- ZONA FIJA SUPERIOR: CARRUSEL / PORTADA EN MOVIMIENTO -->
         <div class="max-w-7xl w-full mx-auto px-4 pb-3">
             <div class="w-full rounded-2xl overflow-hidden shadow-2xl relative bg-black text-white border border-[#00ff66]/30">
                 <div class="w-full h-40 sm:h-56 relative overflow-hidden">
@@ -254,7 +238,6 @@
         </div>
     </div>
 
-    <!-- VISTA VITRINA DE INFOPRODUCTOS -->
     <main id="vista-vitrina" class="max-w-7xl w-full mx-auto px-2 sm:px-4 py-4 flex-grow space-y-4 relative z-10">
         <div class="w-full max-w-2xl mx-auto px-1">
             <div class="relative flex items-center bg-[#050806] border border-[#00ff66]/30 rounded-2xl p-2.5 shadow-xl focus-within:border-[#00ff66] transition-colors">
@@ -274,13 +257,11 @@
             </div>
         </div>
 
-        <!-- GRID ESTILO MARKETPLACE -->
         <div id="grid-productos-vitrina" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
             <div class="col-span-2 sm:col-span-3 lg:col-span-4 text-center text-[#00ff66]/70 py-12 font-mono text-xs">Cargando infoproductos desde la base de datos...</div>
         </div>
     </main>
 
-    <!-- VISTA DETALLE DE INFOPRODUCTO -->
     <main id="vista-detalle" class="hidden max-w-7xl w-full mx-auto px-4 py-8 flex-grow relative z-10">
         <button onclick="cambiarPantalla('vitrina')" class="mb-6 flex items-center gap-2 text-xs font-futurista uppercase tracking-widest text-stone-400 hover:text-[#00ff66] font-bold cursor-pointer transition-colors">
             <i data-lucide="arrow-left" class="w-4 h-4"></i> Volver al Catálogo
@@ -325,7 +306,6 @@
         </div>
     </main>
 
-    <!-- VISTA CARRITO & PAGO PAYPAL -->
     <main id="vista-carrito" class="hidden max-w-7xl w-full mx-auto px-4 py-8 flex-grow relative z-10 grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         <section class="lg:col-span-3 glass-panel p-6 rounded-3xl space-y-4 shadow-2xl border border-[#00ff66]/20">
             <div class="border-b border-[#1a3322] pb-3 mb-4 flex justify-between items-end">
@@ -366,7 +346,6 @@
         </section>
     </main>
 
-    <!-- MODAL LIGHTBOX -->
     <div id="modal-lightbox" class="hidden fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4 cursor-zoom-out backdrop-blur-lg" onclick="cerrarAmplificacion()">
         <button class="absolute top-6 right-6 text-stone-400 hover:text-white transition-colors cursor-pointer">
             <i data-lucide="x" class="w-8 h-8"></i>
@@ -396,7 +375,6 @@
         let productoSeleccionado = null;
         let fotoSeleccionadaParaLightbox = "";
 
-        // Control del Carrusel
         let slideActual = 0;
         const totalSlides = 3;
         let intervaloCarrusel = null;
@@ -431,9 +409,6 @@
             }
         }
 
-        // ============================================================
-        // SISTEMA DE REFERIDOS & DEEP LINKS
-        // ============================================================
         async function detectarReferidoPorDeepLink() {
             if (App) {
                 try {
@@ -992,30 +967,18 @@
             }
         }
 
-        window.mostrarQrApk = function() {
-            const urlApp = 'https://raw.githubusercontent.com/dinigoficial-ui/dunigoficial8/main/app-debug.apk';
-            const modal = document.getElementById('modal-qr');
-            const contenedor = document.getElementById('contenedor-qr');
-            
-            contenedor.innerHTML = "";
-            
-            new QRCode(contenedor, {
-                text: urlApp,
-                width: 170,
-                height: 170,
-                colorDark: "#cc0000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-            });
-            
-            modal.classList.remove('hidden');
-        }
-
-        window.cerrarModalQr = function() {
-            document.getElementById('modal-qr').classList.add('hidden');
-        }
-
         window.addEventListener('DOMContentLoaded', async () => {
             aplicarYFijarCodigoReferido();
             await detectarReferidoPorDeepLink();
-            verificarClienteRegistrado
+            verificarClienteRegistrado();
+            iniciarCarrusel();
+            const clienteGuardado = localStorage.getItem('dunig_cliente_registrado');
+            if (clienteGuardado) {
+                await descargarCatalogoDeSupabase();
+            }
+            lucide.createIcons();
+            reintentarOrdenesPendientes();
+        });
+    </script>
+</body>
+</html>
